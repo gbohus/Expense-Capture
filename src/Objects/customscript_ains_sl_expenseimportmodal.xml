@@ -1,0 +1,25 @@
+<suitelet scriptid="customscript_ains_sl_expenseimportmodal">
+  <description>AI NS|SL|Expense Import Modal - Modal interface for selecting captured expenses to import</description>
+  <isinactive>F</isinactive>
+  <name>AI NS|SL|Expense Import Modal</name>
+  <notifyadmins>F</notifyadmins>
+  <notifyemails></notifyemails>
+  <notifyowner>T</notifyowner>
+  <notifyuser>F</notifyuser>
+  <scriptfile>[/SuiteScripts/AI_NS_ExpenseCapture/Suitelets/AINS_SL_ExpenseImportModal.js]</scriptfile>
+  <scriptdeployments>
+    <scriptdeployment scriptid="customdeploy_ains_sl_expenseimportmodal">
+      <allemployees>T</allemployees>
+      <allpartners>F</allpartners>
+      <allroles>T</allroles>
+      <audslctrole></audslctrole>
+      <eventtype></eventtype>
+      <isdeployed>T</isdeployed>
+      <isonline>F</isonline>
+      <loglevel>DEBUG</loglevel>
+      <runasrole>ADMINISTRATOR</runasrole>
+      <status>RELEASED</status>
+      <title>AI NS Expense Import Modal</title>
+    </scriptdeployment>
+  </scriptdeployments>
+</suitelet>

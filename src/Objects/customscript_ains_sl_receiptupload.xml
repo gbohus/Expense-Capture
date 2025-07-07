@@ -1,0 +1,25 @@
+<suitelet scriptid="customscript_ains_sl_receiptupload">
+  <description>Receipt upload Suitelet for AI NS Expense Capture system</description>
+  <isinactive>F</isinactive>
+  <name>AI NS|SL|Receipt Upload</name>
+  <notifyadmins>F</notifyadmins>
+  <notifyemails></notifyemails>
+  <notifyowner>T</notifyowner>
+  <notifyuser>F</notifyuser>
+  <scriptfile>[/SuiteScripts/AI_NS_ExpenseCapture/Suitelets/AINS_SL_ReceiptUpload.js]</scriptfile>
+  <scriptdeployments>
+    <scriptdeployment scriptid="customdeploy_ains_sl_receiptupload">
+      <allemployees>T</allemployees>
+      <allpartners>F</allpartners>
+      <allroles>T</allroles>
+      <audslctrole></audslctrole>
+      <eventtype></eventtype>
+      <isdeployed>T</isdeployed>
+      <isonline>T</isonline>
+      <loglevel>DEBUG</loglevel>
+      <runasrole>ADMINISTRATOR</runasrole>
+      <status>RELEASED</status>
+      <title>AI NS Expense Receipt Upload</title>
+    </scriptdeployment>
+  </scriptdeployments>
+</suitelet>

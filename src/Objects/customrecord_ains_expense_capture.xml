@@ -1,0 +1,216 @@
+<customrecord scriptid="customrecord_ains_expense_capture">
+    <label>AI NS Expense Capture</label>
+    <recordname>AI NS Expense Capture</recordname>
+    <description>Custom record for storing captured expense receipt data processed by AI</description>
+    <isinactive>F</isinactive>
+    <allowquicksearch>T</allowquicksearch>
+    <allowduplicates>F</allowduplicates>
+    <enableoptimisticlocking>F</enableoptimisticlocking>
+    <showid>F</showid>
+    <showowner>T</showowner>
+    <showcreationdate>T</showcreationdate>
+    <showmodified>T</showmodified>
+    <enablenumbering>T</enablenumbering>
+    <numberingprefix>AINS-</numberingprefix>
+    <numberingsuffix></numberingsuffix>
+    <numberingmindigits>4</numberingmindigits>
+    <numberinginit>1</numberinginit>
+    <customrecordcustomfields>
+        <customrecordcustomfield scriptid="custrecord_ains_file_attachment">
+            <label>Receipt File</label>
+            <type>FILE</type>
+            <displaytype>NORMAL</displaytype>
+            <mandatory>T</mandatory>
+            <checkspelling>F</checkspelling>
+            <help>The uploaded receipt file processed by OCR</help>
+            <displaylength>0</displaylength>
+        </customrecordcustomfield>
+        <customrecordcustomfield scriptid="custrecord_ains_vendor_name">
+            <label>Vendor Name</label>
+            <type>FREEFORMTEXT</type>
+            <displaytype>NORMAL</displaytype>
+            <mandatory>T</mandatory>
+            <checkspelling>F</checkspelling>
+            <help>Vendor name extracted from receipt by OCR/LLM</help>
+            <displaylength>100</displaylength>
+        </customrecordcustomfield>
+        <customrecordcustomfield scriptid="custrecord_ains_expense_amount">
+            <label>Expense Amount</label>
+            <type>CURRENCY</type>
+            <displaytype>NORMAL</displaytype>
+            <mandatory>T</mandatory>
+            <help>Total expense amount extracted from receipt</help>
+        </customrecordcustomfield>
+        <customrecordcustomfield scriptid="custrecord_ains_expense_date">
+            <label>Expense Date</label>
+            <type>DATE</type>
+            <displaytype>NORMAL</displaytype>
+            <mandatory>T</mandatory>
+            <help>Date of expense transaction from receipt</help>
+        </customrecordcustomfield>
+        <customrecordcustomfield scriptid="custrecord_ains_expense_category">
+            <label>Expense Category</label>
+            <type>SELECT</type>
+            <displaytype>NORMAL</displaytype>
+            <mandatory>T</mandatory>
+            <selectrecordtype>EXPENSE_CATEGORY</selectrecordtype>
+            <help>Auto-assigned expense category based on LLM analysis</help>
+        </customrecordcustomfield>
+        <customrecordcustomfield scriptid="custrecord_ains_description">
+            <label>Description</label>
+            <type>TEXTAREA</type>
+            <displaytype>NORMAL</displaytype>
+            <mandatory>F</mandatory>
+            <checkspelling>T</checkspelling>
+            <help>Expense description extracted or generated from receipt</help>
+            <displaylength>500</displaylength>
+        </customrecordcustomfield>
+        <customrecordcustomfield scriptid="custrecord_ains_processing_status">
+            <label>Processing Status</label>
+            <type>SELECT</type>
+            <displaytype>NORMAL</displaytype>
+            <mandatory>T</mandatory>
+            <help>Current status of receipt processing</help>
+            <selectoptions>
+                <selectoption>
+                    <value>pending</value>
+                    <text>Pending</text>
+                </selectoption>
+                <selectoption>
+                    <value>processing</value>
+                    <text>Processing</text>
+                </selectoption>
+                <selectoption>
+                    <value>complete</value>
+                    <text>Complete</text>
+                </selectoption>
+                <selectoption>
+                    <value>error</value>
+                    <text>Error</text>
+                </selectoption>
+            </selectoptions>
+        </customrecordcustomfield>
+        <customrecordcustomfield scriptid="custrecord_ains_created_by">
+            <label>Created By</label>
+            <type>SELECT</type>
+            <displaytype>NORMAL</displaytype>
+            <mandatory>T</mandatory>
+            <selectrecordtype>EMPLOYEE</selectrecordtype>
+            <help>Employee who uploaded the receipt</help>
+        </customrecordcustomfield>
+        <customrecordcustomfield scriptid="custrecord_ains_imported_to_er">
+            <label>Imported to Expense Report</label>
+            <type>CHECKBOX</type>
+            <displaytype>NORMAL</displaytype>
+            <mandatory>F</mandatory>
+            <defaultchecked>F</defaultchecked>
+            <help>Indicates if this expense has been imported to an expense report</help>
+        </customrecordcustomfield>
+        <customrecordcustomfield scriptid="custrecord_ains_expense_report_id">
+            <label>Expense Report ID</label>
+            <type>SELECT</type>
+            <displaytype>NORMAL</displaytype>
+            <mandatory>F</mandatory>
+            <selectrecordtype>EXPENSE_REPORT</selectrecordtype>
+            <help>Reference to the expense report this was imported to</help>
+        </customrecordcustomfield>
+        <customrecordcustomfield scriptid="custrecord_ains_error_message">
+            <label>Error Message</label>
+            <type>LONGTEXT</type>
+            <displaytype>NORMAL</displaytype>
+            <mandatory>F</mandatory>
+            <checkspelling>F</checkspelling>
+            <help>Error details if processing failed</help>
+        </customrecordcustomfield>
+        <customrecordcustomfield scriptid="custrecord_ains_raw_ocr_data">
+            <label>Raw OCR Data</label>
+            <type>LONGTEXT</type>
+            <displaytype>HIDDEN</displaytype>
+            <mandatory>F</mandatory>
+            <checkspelling>F</checkspelling>
+            <help>Raw response from OCI Document Understanding service</help>
+        </customrecordcustomfield>
+        <customrecordcustomfield scriptid="custrecord_ains_llm_response">
+            <label>LLM Response</label>
+            <type>LONGTEXT</type>
+            <displaytype>HIDDEN</displaytype>
+            <mandatory>F</mandatory>
+            <checkspelling>F</checkspelling>
+            <help>Structured response from NetSuite LLM processing</help>
+        </customrecordcustomfield>
+        <customrecordcustomfield scriptid="custrecord_ains_confidence_score">
+            <label>Confidence Score</label>
+            <type>FLOAT</type>
+            <displaytype>NORMAL</displaytype>
+            <mandatory>F</mandatory>
+            <help>Confidence score for the AI processing (0.0 - 1.0)</help>
+        </customrecordcustomfield>
+        <customrecordcustomfield scriptid="custrecord_ains_processed_date">
+            <label>Processed Date</label>
+            <type>DATETIMETZ</type>
+            <displaytype>NORMAL</displaytype>
+            <mandatory>F</mandatory>
+            <help>Date and time when processing completed</help>
+        </customrecordcustomfield>
+        <customrecordcustomfield scriptid="custrecord_ains_file_size">
+            <label>File Size (KB)</label>
+            <type>INTEGER</type>
+            <displaytype>NORMAL</displaytype>
+            <mandatory>F</mandatory>
+            <help>Size of uploaded file in kilobytes</help>
+        </customrecordcustomfield>
+        <customrecordcustomfield scriptid="custrecord_ains_file_type">
+            <label>File Type</label>
+            <type>FREEFORMTEXT</type>
+            <displaytype>NORMAL</displaytype>
+            <mandatory>F</mandatory>
+            <help>Type/extension of uploaded file</help>
+            <displaylength>10</displaylength>
+        </customrecordcustomfield>
+    </customrecordcustomfields>
+    <customrecordtabs>
+        <customrecordtab scriptid="tab_main">
+            <label>Main</label>
+            <fields>
+                <field>custrecord_ains_file_attachment</field>
+                <field>custrecord_ains_vendor_name</field>
+                <field>custrecord_ains_expense_amount</field>
+                <field>custrecord_ains_expense_date</field>
+                <field>custrecord_ains_expense_category</field>
+                <field>custrecord_ains_description</field>
+                <field>custrecord_ains_processing_status</field>
+                <field>custrecord_ains_confidence_score</field>
+            </fields>
+        </customrecordtab>
+        <customrecordtab scriptid="tab_integration">
+            <label>Integration</label>
+            <fields>
+                <field>custrecord_ains_created_by</field>
+                <field>custrecord_ains_imported_to_er</field>
+                <field>custrecord_ains_expense_report_id</field>
+                <field>custrecord_ains_processed_date</field>
+            </fields>
+        </customrecordtab>
+        <customrecordtab scriptid="tab_technical">
+            <label>Technical</label>
+            <fields>
+                <field>custrecord_ains_file_size</field>
+                <field>custrecord_ains_file_type</field>
+                <field>custrecord_ains_error_message</field>
+                <field>custrecord_ains_raw_ocr_data</field>
+                <field>custrecord_ains_llm_response</field>
+            </fields>
+        </customrecordtab>
+    </customrecordtabs>
+    <permissions>
+        <permission>
+            <role>ADMINISTRATOR</role>
+            <permlevel>FULL</permlevel>
+        </permission>
+        <permission>
+            <role>EMPLOYEE_CENTER</role>
+            <permlevel>CREATE</permlevel>
+            <restriction>OWN</restriction>
+        </permission>
+    </permissions>
+</customrecord>
