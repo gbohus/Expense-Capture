@@ -20,21 +20,22 @@ The system follows a three-stage process: **Upload**, **Automated Processing**, 
 ```mermaid
 graph TD
     subgraph "1. User Action"
-        A["User uploads receipt<br/>(Portlet/Suitelet)"] --> B{"Save File &<br/>Create Custom Record"};
+        A["User uploads receipt<br/>(Portlet/Suitelet)"] --> B["Save File &<br/>Create Custom Record"];
     end
 
     subgraph "2. Automated AI Processing"
         B -- "Status: Pending" --> C["Map/Reduce Script<br/>(AINS_MR_ProcessReceipts)"];
         C -- "Map Stage" --> D["OCI Document<br/>Understanding (OCR)"];
         D -- "Extracted Text" --> E["NetSuite LLM<br/>(Data Formatting & Categorization)"];
-        E -- "Structured JSON" --> F{"Update Record<br/>Status: Complete"};
+        E -- "Structured JSON" --> F["Update Record<br/>Status: Complete"];
     end
 
     subgraph "3. Expense Report Creation"
         G["User opens<br/>Expense Report"] --> H["Client Script adds<br/>'Import' button"];
         H -- "User Click" --> I["Import Modal<br/>(AINS_SL_ExpenseImportModal)"];
-        I -- "User Selects Expenses" --> J{"Add lines to<br/>Expense Report"};
-        F & J --> K["Mark Custom Record<br/>as Imported"];
+        I -- "User Selects Expenses" --> J["Add lines to<br/>Expense Report"];
+        F --> J;
+        J --> K["Mark Custom Record<br/>as Imported"];
     end
 
     style A fill:#d4edda,stroke:#155724
