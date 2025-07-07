@@ -100,6 +100,9 @@
       <status>NOTSCHEDULED</status>
       <title>AI NS Process Receipts</title>
       <yieldaftermins>60</yieldaftermins>
+      <custscript_ains_llm_model>command-r</custscript_ains_llm_model>
+      <custscript_ains_confidence_threshold>0.8</custscript_ains_confidence_threshold>
+      <custscript_ains_auto_assign>T</custscript_ains_auto_assign>
       <recurrence>
         <single>
           <repeat></repeat>

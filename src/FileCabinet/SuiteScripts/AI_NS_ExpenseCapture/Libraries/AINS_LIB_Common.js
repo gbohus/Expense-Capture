@@ -44,7 +44,7 @@ function(runtime, log, url, query) {
             UPLOAD_SUITELET: '_nsai_sl_receipt_upload',
             PROCESS_MR: '_nsai_mr_process_receipts',
             IMPORT_MODAL: '_nsai_sl_expense_import_modal',
-            EMPLOYEE_PORTLET: '_nsai_pl_employee_center_portlet',
+            EMPLOYEE_PORTLET: '_nsai_pl_empcentportlet',
             ER_CLIENT_SCRIPT: '_nsai_cs_expense_report_import'
         },
 

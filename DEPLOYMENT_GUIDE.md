@@ -61,7 +61,7 @@ Use the provided `deploy.xml` file or manually create each script record with th
   - `custscript_ains_confidence_threshold`: 0.8
   - `custscript_ains_auto_assign`: true
 
-#### Employee Center Portlet (`_nsai_pl_employee_center_portlet`)
+#### Employee Center Portlet (`_nsai_pl_empcentportlet`)
 - **File**: `AINS_PL_EmployeeCenterPortlet.js`
 - **Type**: Portlet
 

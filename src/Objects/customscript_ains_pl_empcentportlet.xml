@@ -1,4 +1,4 @@
-<portlet scriptid="customscript_ains_pl_employeecenterportlet">
+<portlet scriptid="customscript_ains_pl_empcentportlet">
   <description>Employee Center portlet for AI NS Expense Capture system</description>
   <isinactive>F</isinactive>
   <name>AI NS|PL|Employee Center Portlet</name>
@@ -9,7 +9,7 @@
   <portlettype>HTML</portlettype>
   <scriptfile>[/SuiteScripts/AI_NS_ExpenseCapture/Portlets/AINS_PL_EmployeeCenterPortlet.js]</scriptfile>
   <scriptdeployments>
-    <scriptdeployment scriptid="customdeploy_ains_pl_employeecenterportlet">
+    <scriptdeployment scriptid="customdeploy_ains_pl_empcentportlet">
       <allemployees>T</allemployees>
       <allpartners>F</allpartners>
       <allroles>T</allroles>
