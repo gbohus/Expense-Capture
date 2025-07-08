@@ -3,7 +3,6 @@
  * @NScriptType Suitelet
  * @NModuleScope SameAccount
  * @description Receipt upload Suitelet for AI NS Expense Capture system
- * @author AI NS Expense Capture System
  */
 
 define(['N/ui/serverWidget', 'N/file', 'N/record', 'N/runtime', 'N/url', 'N/redirect', 'N/encode',
@@ -69,27 +68,20 @@ function(ui, file, record, runtime, url, redirect, encode, commonLib, ociLib) {
         instructionsField.defaultValue = createInstructionsHTML();
 
         // File upload section
-        const uploadGroup = form.addFieldGroup({
-            id: 'upload_group',
-            label: 'Receipt Upload'
-        });
-
         const fileField = form.addField({
             id: 'receipt_file',
             type: ui.FieldType.FILE,
-            label: 'Receipt File',
-            container: 'upload_group'
+            label: 'Receipt File'
         });
 
-        fileField.isMandatory = true;
+        fileField.isMandatory = false;
         fileField.help = `Upload receipt image or PDF (max ${commonLib.getScriptParameter(CONSTANTS.SCRIPT_PARAMS.MAX_FILE_SIZE, CONSTANTS.DEFAULT_VALUES.MAX_FILE_SIZE_MB)}MB). Supported formats: ${CONSTANTS.SUPPORTED_FILE_TYPES.join(', ').toUpperCase()}`;
 
         // Description field (optional)
         const descriptionField = form.addField({
             id: 'initial_description',
             type: ui.FieldType.TEXTAREA,
-            label: 'Description (Optional)',
-            container: 'upload_group'
+            label: 'Description (Optional)'
         });
 
         descriptionField.help = 'Optional initial description - AI will extract details automatically';
@@ -179,7 +171,6 @@ function(ui, file, record, runtime, url, redirect, encode, commonLib, ociLib) {
             const expenseRecord = createExpenseCaptureRecord({
                 file: savedFile,
                 userId: parameters.user_id,
-                initialDescription: parameters.initial_description,
                 trackingId: trackingId
             });
 
@@ -338,14 +329,6 @@ function(ui, file, record, runtime, url, redirect, encode, commonLib, ociLib) {
                 fieldId: CONSTANTS.FIELDS.FILE_TYPE,
                 value: options.file.fileType || options.file.name.split('.').pop().toLowerCase()
             });
-
-            // Set initial description if provided
-            if (options.initialDescription) {
-                expenseRecord.setValue({
-                    fieldId: CONSTANTS.FIELDS.DESCRIPTION,
-                    value: options.initialDescription
-                });
-            }
 
             // Save record
             const recordId = expenseRecord.save();

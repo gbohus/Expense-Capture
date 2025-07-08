@@ -19,6 +19,9 @@ function(ui, runtime, query, url, format, commonLib) {
      * @param {string} params.entity - (For custom portlets only) references the customer ID for the selected customer
      */
     function render(params) {
+        const portlet = params.portlet;
+        portlet.title = 'AI Expense Receipt Capture';
+
         try {
             const currentUser = commonLib.getCurrentUser();
 
@@ -27,23 +30,12 @@ function(ui, runtime, query, url, format, commonLib) {
                 column: params.column
             });
 
-            const portlet = params.portlet;
-            portlet.title = 'AI Expense Receipt Capture';
-
             // Get user's recent uploads
             const recentUploads = getUserRecentUploads(currentUser.id);
             const stats = calculateUserStats(recentUploads);
 
-            // Create main content
-            const content = createPortletContent(currentUser, recentUploads, stats);
-
-            // Add the content as a single column
-            portlet.addColumn({
-                id: 'main_content',
-                type: ui.FieldType.INLINEHTML,
-                label: '',
-                html: content
-            });
+            // Create and set main content
+            portlet.html = createPortletContent(currentUser, recentUploads, stats);
 
             commonLib.logOperation('portlet_render_success', {
                 userId: currentUser.id,
@@ -57,12 +49,7 @@ function(ui, runtime, query, url, format, commonLib) {
             }, 'error');
 
             // Show error in portlet
-            params.portlet.addColumn({
-                id: 'error_content',
-                type: ui.FieldType.INLINEHTML,
-                label: '',
-                html: createErrorContent(error)
-            });
+            portlet.html = createErrorContent(error);
         }
     }
 
@@ -486,7 +473,7 @@ function(ui, runtime, query, url, format, commonLib) {
         try {
             return url.resolveScript({
                 scriptId: CONSTANTS.SCRIPT_IDS.UPLOAD_SUITELET,
-                deploymentId: runtime.getCurrentScript().getParameter('custscript_upload_deployment_id') || 1,
+                deploymentId: CONSTANTS.DEPLOYMENT_IDS.UPLOAD_SUITELET,
                 params: {
                     source: 'portlet'
                 }

@@ -41,11 +41,15 @@ function(runtime, log, url, query) {
         },
 
         SCRIPT_IDS: {
-            UPLOAD_SUITELET: '_nsai_sl_receipt_upload',
+            UPLOAD_SUITELET: 'customscript_ains_sl_receiptupload',
             PROCESS_MR: '_nsai_mr_process_receipts',
             IMPORT_MODAL: '_nsai_sl_expense_import_modal',
             EMPLOYEE_PORTLET: '_nsai_pl_empcentportlet',
             ER_CLIENT_SCRIPT: '_nsai_cs_expense_report_import'
+        },
+
+        DEPLOYMENT_IDS: {
+            UPLOAD_SUITELET: 'customdeploy_ains_sl_receiptupload'
         },
 
         SCRIPT_PARAMS: {

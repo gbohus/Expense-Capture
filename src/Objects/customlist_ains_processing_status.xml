@@ -1,0 +1,24 @@
+<customlist scriptid="customlist_ains_processing_status">
+    <name>AI NS Processing Status</name>
+    <description>Processing status for expense capture record.</description>
+    <isinactive>F</isinactive>
+    <isordered>T</isordered>
+    <customvalues>
+        <customvalue scriptid="pending">
+            <value>Pending</value>
+            <isinactive>F</isinactive>
+        </customvalue>
+        <customvalue scriptid="processing">
+            <value>Processing</value>
+            <isinactive>F</isinactive>
+        </customvalue>
+        <customvalue scriptid="complete">
+            <value>Complete</value>
+            <isinactive>F</isinactive>
+        </customvalue>
+        <customvalue scriptid="error">
+            <value>Error</value>
+            <isinactive>F</isinactive>
+        </customvalue>
+    </customvalues>
+</customlist>
