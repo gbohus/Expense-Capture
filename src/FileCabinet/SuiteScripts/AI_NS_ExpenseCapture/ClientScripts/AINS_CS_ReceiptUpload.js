@@ -2,15 +2,11 @@
  * @NApiVersion 2.1
  * @NScriptType ClientScript
  * @NModuleScope SameAccount
+ * @description Client script for Receipt Upload functionality
  */
 
-/**
- * AI NS Expense Capture - Receipt Upload Client Script
- * Provides client-side functionality for the receipt upload form
- */
-
-define(['N/currentRecord'], function(currentRecord) {
-    'use strict';
+define(['N/currentRecord', 'N/ui/dialog', 'N/url', 'N/https'],
+function(currentRecord, dialog, url, https) {
 
     /**
      * Page initialization function
@@ -18,10 +14,13 @@ define(['N/currentRecord'], function(currentRecord) {
      */
     function pageInit(scriptContext) {
         try {
-            console.log('AI NS Receipt Upload form initialized');
+            console.log('AI NS Receipt Upload form initialized - native upload method');
 
-            // Add initialization logic specific to NetSuite forms
-            initializeUploadForm(scriptContext.currentRecord);
+            // Add global functions for the interface
+            window.openNativeUpload = openNativeUpload;
+            window.returnToDashboard = returnToDashboard;
+            window.uploadDifferentFile = uploadDifferentFile;
+            window.uploadAnother = uploadAnother;
 
         } catch (error) {
             console.error('Error initializing receipt upload form:', error);
@@ -29,195 +28,206 @@ define(['N/currentRecord'], function(currentRecord) {
     }
 
     /**
-     * Initialize upload form with NetSuite-specific enhancements
-     * @param {Record} currentRec - Current record object
+     * Open NetSuite's native expense media upload window
+     * @param {string} uploadUrl - The native NetSuite upload URL
      */
-    function initializeUploadForm(currentRec) {
+    function openNativeUpload(uploadUrl) {
         try {
-            // Add any NetSuite-specific initialization here
-            // Avoid direct DOM manipulation
-            console.log('Upload form initialized');
-        } catch (error) {
-            console.error('Error initializing upload form:', error);
-        }
-    }
+            console.log('Opening native NetSuite upload window:', uploadUrl);
 
-    /**
-     * Field changed event handler
-     * @param {Object} scriptContext - Client script context
-     */
-    function fieldChanged(scriptContext) {
-        try {
-            const currentRec = scriptContext.currentRecord;
-            const fieldId = scriptContext.fieldId;
+            // Open NetSuite's native upload window in a popup
+            const popup = window.open(
+                uploadUrl,
+                'ExpenseMediaUpload',
+                'width=800,height=600,scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=no,status=no'
+            );
 
-            // Handle file field changes
-            if (fieldId === 'custpage_receipt_file') { // Use proper NetSuite field ID
-                handleFileSelection(currentRec);
-            }
-
-        } catch (error) {
-            console.error('Error in fieldChanged:', error);
-        }
-    }
-
-    /**
-     * Handle file selection for receipt upload
-     * @param {Record} currentRec - Current record object
-     */
-    function handleFileSelection(currentRec) {
-        try {
-            // Check if file is selected using NetSuite methods
-            const fileObj = currentRec.getValue({ fieldId: 'custpage_receipt_file' });
-
-            if (fileObj) {
-                console.log('Receipt file selected');
-                // Perform any additional validation or processing
-                validateFileSelection(fileObj);
-            }
-        } catch (error) {
-            console.error('Error handling file selection:', error);
-        }
-    }
-
-    /**
-     * Validate file selection (server-side validation is still needed)
-     * @param {Object} fileObj - File object from NetSuite
-     */
-    function validateFileSelection(fileObj) {
-        try {
-            // Note: Client-side file validation in NetSuite is limited
-            // Most validation should be done server-side
-
-            if (fileObj && fileObj.name) {
-                const fileName = fileObj.name.toLowerCase();
-                const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.pdf'];
-
-                const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
-
-                if (!hasValidExtension) {
-                    alert('Please select a valid file type: JPEG, PNG, GIF, or PDF');
-                    return false;
+            // Monitor the popup for completion
+            const checkClosed = setInterval(function() {
+                if (popup.closed) {
+                    clearInterval(checkClosed);
+                    handleUploadComplete();
                 }
-            }
+            }, 1000);
 
-            return true;
         } catch (error) {
-            console.error('Error validating file:', error);
-            return true; // Allow submission if validation fails
+            console.error('Error opening native upload window:', error);
+            dialog.alert({
+                title: 'Upload Error',
+                message: 'Unable to open upload window. Please try again.'
+            });
         }
     }
 
     /**
-     * Validate form before submission
-     * @param {Object} scriptContext - Client script context
-     * @returns {boolean} True if validation passes
+     * Handle upload completion from native window
      */
-    function saveRecord(scriptContext) {
+    function handleUploadComplete() {
         try {
-            const currentRec = scriptContext.currentRecord;
+            console.log('Native upload window closed - checking for completion');
 
-            // Check if file is selected
-            const fileField = currentRec.getValue({ fieldId: 'custpage_receipt_file' });
+            // Show success message and redirect to processing step
+            dialog.alert({
+                title: 'Upload Complete',
+                message: 'File uploaded successfully! Click OK to proceed to processing.'
+            }).then(function() {
+                // Preserve the script and deployment IDs in the redirect URL
+                const currentUrl = window.location.href;
+                const urlParts = currentUrl.split('?');
+                const baseUrl = urlParts[0];
+                const existingParams = urlParts[1] || '';
 
-            if (!fileField) {
-                alert('Please select a receipt file to upload.');
-                return false;
-            }
+                // Parse existing parameters
+                const params = new URLSearchParams(existingParams);
 
-            // Additional validation can be added here
-            if (!validateFormData(currentRec)) {
-                return false;
-            }
+                // Add the find_recent_upload parameter
+                params.set('find_recent_upload', 'true');
 
-            // Show loading message
-            showProcessingMessage();
+                // Remove any existing file parameters to start fresh
+                params.delete('uploaded_file_id');
+                params.delete('uploaded_file_name');
 
-            return true;
+                // Construct the new URL with all parameters
+                const processingUrl = baseUrl + '?' + params.toString();
+                window.location.href = processingUrl;
+            });
 
         } catch (error) {
-            console.error('Error in saveRecord validation:', error);
-            alert('An error occurred during validation. Please try again.');
+            console.error('Error handling upload completion:', error);
+        }
+    }
+
+    /**
+     * Save record validation function
+     * @param {Object} context - Script context
+     * @returns {boolean} - True if validation passes
+     */
+    function saveRecord(context) {
+        try {
+            const record = context.currentRecord;
+
+            // Check if this is Step 1 (upload) or Step 2 (processing)
+            const uploadedFileId = record.getValue('uploaded_file_id');
+
+            if (!uploadedFileId) {
+                // Step 1: Validate file upload
+                return validateFileUpload(record);
+            } else {
+                // Step 2: Validate processing trigger
+                return validateProcessingTrigger(record);
+            }
+
+        } catch (error) {
+            console.error('Form validation error:', error);
+            dialog.alert({
+                title: 'Validation Error',
+                message: 'An error occurred during validation: ' + error.message
+            });
             return false;
         }
     }
 
     /**
-     * Validate additional form data
-     * @param {Record} currentRec - Current record object
-     * @returns {boolean} True if validation passes
+     * Validate file upload (Step 1) - Not used with native upload
+     * @param {Record} record - Current record
+     * @returns {boolean} - True if validation passes
      */
-    function validateFormData(currentRec) {
-        try {
-            // Add any additional form validation here
-            // Example: Check required fields, validate data formats, etc.
-
-            return true;
-        } catch (error) {
-            console.error('Error validating form data:', error);
-            return false;
-        }
+    function validateFileUpload(record) {
+        // Native upload handles its own validation
+        return true;
     }
 
     /**
-     * Show processing message (NetSuite-compatible approach)
+     * Validate processing trigger (Step 2)
+     * @param {Record} record - Current record
+     * @returns {boolean} - True if validation passes
      */
-    function showProcessingMessage() {
-        try {
-            // Use NetSuite's built-in loading message if available
-            // Or show a simple alert
-            console.log('Processing upload...');
+    function validateProcessingTrigger(record) {
+        // Confirm processing with user
+        const fileName = record.getValue('uploaded_file_name');
 
-            // Note: For better UX, consider using a Suitelet with AJAX
-            // to show proper progress indicators
-
-        } catch (error) {
-            console.error('Error showing processing message:', error);
-        }
+        return dialog.confirm({
+            title: 'Start AI Processing',
+            message: `Ready to process "${fileName}" with AI?\n\nThis will extract expense data using Oracle OCI and NetSuite LLM.`
+        });
     }
 
     /**
-     * Cancel upload functionality
-     * @param {Object} scriptContext - Client script context (optional)
+     * Upload a different file (return to upload step)
      */
-    function cancelUpload(scriptContext) {
-        try {
-            // Confirm cancellation
-            if (confirm('Are you sure you want to cancel the upload?')) {
-                // Clear the form or navigate away
-                if (window.history.length > 1) {
-                    window.history.back();
-                } else {
-                    // Navigate to a safe location
-                    window.location = '/app/center/card.nl?sc=-29'; // Employee Center
-                }
-            }
-        } catch (error) {
-            console.error('Error during cancel:', error);
-            // Fallback navigation
-            window.location = '/app/center/card.nl?sc=-29';
-        }
+    function uploadDifferentFile() {
+        // Redirect back to upload form without file parameters but preserve script/deployment IDs
+        const currentUrl = window.location.href;
+        const urlParts = currentUrl.split('?');
+        const baseUrl = urlParts[0];
+        const existingParams = urlParts[1] || '';
+
+        // Parse existing parameters
+        const params = new URLSearchParams(existingParams);
+
+        // Remove file-related parameters
+        params.delete('uploaded_file_id');
+        params.delete('uploaded_file_name');
+        params.delete('find_recent_upload');
+
+        // Construct the clean URL
+        const cleanUrl = baseUrl + (params.toString() ? '?' + params.toString() : '');
+        window.location.href = cleanUrl;
     }
 
     /**
-     * Post sourcing event handler (if needed)
-     * @param {Object} scriptContext - Client script context
+     * Upload another receipt (start fresh)
      */
-    function postSourcing(scriptContext) {
-        try {
-            // Handle post-sourcing logic if needed
-            console.log('Post sourcing triggered for field:', scriptContext.fieldId);
-        } catch (error) {
-            console.error('Error in postSourcing:', error);
+    function uploadAnother() {
+        // Redirect to fresh upload form preserving script/deployment IDs
+        const currentUrl = window.location.href;
+        const urlParts = currentUrl.split('?');
+        const baseUrl = urlParts[0];
+        const existingParams = urlParts[1] || '';
+
+        // Parse existing parameters
+        const params = new URLSearchParams(existingParams);
+
+        // Remove file-related parameters
+        params.delete('uploaded_file_id');
+        params.delete('uploaded_file_name');
+        params.delete('find_recent_upload');
+
+        // Construct the clean URL
+        const cleanUrl = baseUrl + (params.toString() ? '?' + params.toString() : '');
+        window.location.href = cleanUrl;
+    }
+
+    /**
+     * Return to dashboard
+     */
+    function returnToDashboard() {
+        // This would redirect to the Employee Center dashboard
+        // For now, just go back to the main page
+        window.location.href = '/app/center/card.nl?sc=-29';
+    }
+
+    /**
+     * View a specific expense record
+     * @param {string} recordId - Record ID to view
+     */
+    function viewRecord(recordId) {
+        if (recordId) {
+            const recordUrl = url.resolveRecord({
+                recordType: 'customrecord_ains_expense_capture',
+                recordId: recordId
+            });
+            window.location.href = recordUrl;
         }
     }
 
-    // Return the entry points for the client script
+    // Return public functions
     return {
         pageInit: pageInit,
-        fieldChanged: fieldChanged,
         saveRecord: saveRecord,
-        postSourcing: postSourcing,
-        cancelUpload: cancelUpload
+        uploadDifferentFile: uploadDifferentFile,
+        uploadAnother: uploadAnother,
+        returnToDashboard: returnToDashboard,
+        viewRecord: viewRecord
     };
 });

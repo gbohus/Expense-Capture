@@ -192,15 +192,15 @@ function(ui, runtime, query, url, format, commonLib) {
             <style>
                 .ains-portlet-container {
                     font-family: Arial, sans-serif;
-                    font-size: 12px;
-                    line-height: 1.4;
+                    font-size: 14px;
+                    line-height: 1.5;
                 }
 
                 .ains-header {
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    background: #325C72;
                     color: white;
-                    padding: 12px;
-                    border-radius: 6px 6px 0 0;
+                    padding: 16px;
+                    border-radius: 4px 4px 0 0;
                     text-align: center;
                 }
 
@@ -208,45 +208,51 @@ function(ui, runtime, query, url, format, commonLib) {
                     display: flex;
                     justify-content: space-around;
                     background: #f8f9fa;
-                    padding: 10px;
-                    border-left: 1px solid #ddd;
-                    border-right: 1px solid #ddd;
+                    padding: 16px;
+                    border-left: 1px solid #325C72;
+                    border-right: 1px solid #325C72;
+                    border-bottom: 1px solid #e9ecef;
                 }
 
                 .ains-stat {
                     text-align: center;
                     flex: 1;
+                    padding: 4px;
                 }
 
                 .ains-stat-number {
-                    font-size: 18px;
+                    font-size: 20px;
                     font-weight: bold;
-                    color: #333;
+                    color: #325C72;
+                    margin-bottom: 4px;
                 }
 
                 .ains-stat-label {
-                    font-size: 10px;
+                    font-size: 11px;
                     color: #666;
-                    margin-top: 2px;
+                    font-weight: 500;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
                 }
 
                 .ains-recent {
-                    max-height: 200px;
+                    max-height: 220px;
                     overflow-y: auto;
-                    border: 1px solid #ddd;
+                    border: 1px solid #325C72;
                     background: white;
                 }
 
                 .ains-upload-item {
-                    padding: 8px 12px;
+                    padding: 12px 16px;
                     border-bottom: 1px solid #eee;
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
+                    font-size: 14px;
                 }
 
                 .ains-upload-item:hover {
-                    background: #f8f9fa;
+                    background: #f0f6f8;
                 }
 
                 .ains-upload-info {
@@ -255,78 +261,99 @@ function(ui, runtime, query, url, format, commonLib) {
 
                 .ains-upload-vendor {
                     font-weight: bold;
-                    color: #333;
+                    color: #325C72;
+                    font-size: 15px;
                 }
 
                 .ains-upload-amount {
-                    color: #28a745;
+                    color: #2d5266;
                     font-weight: bold;
+                    font-size: 14px;
                 }
 
                 .ains-upload-meta {
-                    font-size: 10px;
+                    font-size: 12px;
                     color: #666;
-                    margin-top: 2px;
+                    margin-top: 4px;
                 }
 
                 .ains-status {
-                    padding: 2px 6px;
-                    border-radius: 3px;
-                    font-size: 10px;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    font-size: 11px;
                     font-weight: bold;
                     text-transform: uppercase;
                 }
 
                 .status-pending { background: #fff3cd; color: #856404; }
-                .status-processing { background: #cce5ff; color: #004085; }
+                .status-processing { background: #dbeafe; color: #325C72; }
                 .status-complete { background: #d4edda; color: #155724; }
                 .status-error { background: #f8d7da; color: #721c24; }
 
                 .ains-actions {
                     background: #f8f9fa;
-                    padding: 12px;
-                    border-radius: 0 0 6px 6px;
-                    border: 1px solid #ddd;
+                    padding: 16px;
+                    border-radius: 0 0 4px 4px;
+                    border: 1px solid #325C72;
                     border-top: none;
                     text-align: center;
                 }
 
                 .ains-btn {
                     display: inline-block;
-                    padding: 8px 16px;
-                    margin: 4px;
-                    background: #007bff;
-                    color: white;
+                    padding: 10px 20px;
+                    margin: 0 4px;
+                    color: white !important;
                     text-decoration: none;
                     border-radius: 4px;
-                    font-size: 12px;
-                    font-weight: bold;
-                    transition: background 0.3s;
+                    font-size: 13px;
+                    font-weight: 500;
+                    transition: background-color 0.2s ease;
                 }
 
                 .ains-btn:hover {
-                    background: #0056b3;
-                    color: white;
+                    color: white !important;
                     text-decoration: none;
                 }
 
                 .ains-btn-primary {
-                    background: #28a745;
+                    background: #325C72;
+                    color: white !important;
                 }
 
                 .ains-btn-primary:hover {
-                    background: #1e7e34;
+                    background: #2d5266;
+                    color: white !important;
+                }
+
+                .ains-btn-secondary {
+                    background: #6c757d;
+                    color: white !important;
+                }
+
+                .ains-btn-secondary:hover {
+                    background: #5a6268;
+                    color: white !important;
                 }
 
                 .ains-empty-state {
                     text-align: center;
-                    padding: 30px;
+                    padding: 40px 20px;
                     color: #666;
+                    font-size: 14px;
+                    background: #fafbfc;
                 }
 
-                .ains-empty-icon {
-                    font-size: 48px;
-                    margin-bottom: 12px;
+                .ains-empty-title {
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: #325C72;
+                    margin-bottom: 8px;
+                }
+
+                .ains-empty-subtitle {
+                    font-size: 14px;
+                    color: #666;
                 }
             </style>
         `;
@@ -341,12 +368,10 @@ function(ui, runtime, query, url, format, commonLib) {
     function createHeaderSection(user, uploadUrl) {
         return `
             <div class="ains-header">
-                <div style="font-size: 14px; font-weight: bold; margin-bottom: 4px;">
-                    📄 Receipt Capture
+                <div style="font-size: 18px; font-weight: bold; margin-bottom: 6px;">
+                    Expense Capture
                 </div>
-                <div style="font-size: 11px; opacity: 0.9;">
-                    AI-powered expense processing
-                </div>
+
             </div>
         `;
     }
@@ -373,7 +398,7 @@ function(ui, runtime, query, url, format, commonLib) {
                 </div>
                 <div class="ains-stat">
                     <div class="ains-stat-number">${commonLib.formatCurrency(stats.totalAmount)}</div>
-                    <div class="ains-stat-label">Total $</div>
+                    <div class="ains-stat-label">Total Amount</div>
                 </div>
             </div>
         `;
@@ -389,9 +414,8 @@ function(ui, runtime, query, url, format, commonLib) {
             return `
                 <div class="ains-recent">
                     <div class="ains-empty-state">
-                        <div class="ains-empty-icon">📊</div>
-                        <div style="font-weight: bold; margin-bottom: 8px;">No receipts yet</div>
-                        <div style="font-size: 11px;">Upload your first receipt to get started!</div>
+                        <div class="ains-empty-title">No receipts uploaded</div>
+                        <div class="ains-empty-subtitle">Upload receipt documents to begin processing</div>
                     </div>
                 </div>
             `;
@@ -434,10 +458,10 @@ function(ui, runtime, query, url, format, commonLib) {
         return `
             <div class="ains-actions">
                 <a href="${uploadUrl}" class="ains-btn ains-btn-primary" target="_blank">
-                    📤 Upload Receipt
+                    Upload Receipt
                 </a>
-                <a href="#" onclick="window.location.reload(); return false;" class="ains-btn">
-                    🔄 Refresh
+                <a href="#" onclick="window.location.reload(); return false;" class="ains-btn ains-btn-secondary">
+                    Refresh
                 </a>
             </div>
         `;

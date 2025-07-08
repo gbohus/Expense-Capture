@@ -5,9 +5,9 @@
  * @description Receipt upload Suitelet for AI NS Expense Capture system
  */
 
-define(['N/ui/serverWidget', 'N/file', 'N/record', 'N/runtime', 'N/url', 'N/redirect', 'N/encode',
+define(['N/ui/serverWidget', 'N/file', 'N/record', 'N/runtime', 'N/url', 'N/redirect', 'N/encode', 'N/task', 'N/search',
         '../Libraries/AINS_LIB_Common', '../Libraries/AINS_LIB_OCIIntegration'],
-function(ui, file, record, runtime, url, redirect, encode, commonLib, ociLib) {
+function(ui, file, record, runtime, url, redirect, encode, task, search, commonLib, ociLib) {
 
     const CONSTANTS = commonLib.CONSTANTS;
 
@@ -42,9 +42,27 @@ function(ui, file, record, runtime, url, redirect, encode, commonLib, ociLib) {
         const currentUser = commonLib.getCurrentUser();
         const isEmployeeCenter = commonLib.isEmployeeCenterRole();
 
+        // Check if we have an uploaded file in the session/parameters
+        let uploadedFileId = context.request.parameters.uploaded_file_id;
+        let uploadedFileName = context.request.parameters.uploaded_file_name;
+
+        // Check if we need to find a recently uploaded file
+        const findRecentUpload = context.request.parameters.find_recent_upload;
+        if (findRecentUpload === 'true' && !uploadedFileId) {
+            const recentFile = findRecentlyUploadedFile(currentUser.id);
+            if (recentFile) {
+                uploadedFileId = recentFile.id;
+                uploadedFileName = recentFile.name;
+            } else {
+                // If we can't find the recent file, show an error message
+                return showRecentFileNotFoundPage(context);
+            }
+        }
+
         commonLib.logOperation('render_upload_form', {
             userId: currentUser.id,
-            isEmployeeCenter: isEmployeeCenter
+            isEmployeeCenter: isEmployeeCenter,
+            hasUploadedFile: !!uploadedFileId
         });
 
         // Create form
@@ -52,7 +70,7 @@ function(ui, file, record, runtime, url, redirect, encode, commonLib, ociLib) {
             title: 'AI NS Expense Receipt Upload'
         });
 
-        // Add client script for enhanced UX
+        // Add client script for form validation
         form.clientScriptModulePath = '../ClientScripts/AINS_CS_ReceiptUpload.js';
 
         // Add CSS styling
@@ -67,50 +85,25 @@ function(ui, file, record, runtime, url, redirect, encode, commonLib, ociLib) {
 
         instructionsField.defaultValue = createInstructionsHTML();
 
-        // File upload section
-        const fileField = form.addField({
-            id: 'receipt_file',
-            type: ui.FieldType.FILE,
-            label: 'Receipt File'
-        });
-
-        fileField.isMandatory = false;
-        fileField.help = `Upload receipt image or PDF (max ${commonLib.getScriptParameter(CONSTANTS.SCRIPT_PARAMS.MAX_FILE_SIZE, CONSTANTS.DEFAULT_VALUES.MAX_FILE_SIZE_MB)}MB). Supported formats: ${CONSTANTS.SUPPORTED_FILE_TYPES.join(', ').toUpperCase()}`;
-
-        // Description field (optional)
-        const descriptionField = form.addField({
-            id: 'initial_description',
-            type: ui.FieldType.TEXTAREA,
-            label: 'Description (Optional)'
-        });
-
-        descriptionField.help = 'Optional initial description - AI will extract details automatically';
-
-        // Progress indicator
-        const progressField = form.addField({
-            id: 'progress_indicator',
-            type: ui.FieldType.INLINEHTML,
-            label: 'Upload Progress'
-        });
-
-        progressField.defaultValue = commonLib.createProgressIndicator('upload_progress');
+        if (!uploadedFileId) {
+            // Step 1: Show upload interface
+            renderUploadInterface(form, currentUser);
+        } else {
+            // Step 2: Show processing interface
+            renderProcessingInterface(form, currentUser, uploadedFileId, uploadedFileName);
+        }
 
         // Status section for displaying recent uploads
         if (context.request.parameters.showRecent !== 'false') {
             addRecentUploadsSection(form, currentUser.id);
         }
 
-        // Submit button
-        form.addSubmitButton({
-            label: 'Upload Receipt'
-        });
-
         // Cancel button for Employee Center
         if (isEmployeeCenter) {
             form.addButton({
                 id: 'btn_cancel',
-                label: 'Cancel',
-                functionName: 'cancelUpload'
+                label: 'Return to Dashboard',
+                functionName: 'returnToDashboard'
             });
         }
 
@@ -123,19 +116,115 @@ function(ui, file, record, runtime, url, redirect, encode, commonLib, ociLib) {
             displayType: ui.FieldDisplayType.HIDDEN
         }).defaultValue = currentUser.id;
 
-        form.addField({
-            id: 'is_employee_center',
-            type: ui.FieldType.CHECKBOX,
-            label: 'Employee Center'
-        }).updateDisplayType({
-            displayType: ui.FieldDisplayType.HIDDEN
-        }).defaultValue = isEmployeeCenter ? 'T' : 'F';
+        if (uploadedFileId) {
+            form.addField({
+                id: 'uploaded_file_id',
+                type: ui.FieldType.TEXT,
+                label: 'Uploaded File ID'
+            }).updateDisplayType({
+                displayType: ui.FieldDisplayType.HIDDEN
+            }).defaultValue = uploadedFileId;
+
+            form.addField({
+                id: 'uploaded_file_name',
+                type: ui.FieldType.TEXT,
+                label: 'Uploaded File Name'
+            }).updateDisplayType({
+                displayType: ui.FieldDisplayType.HIDDEN
+            }).defaultValue = uploadedFileName;
+        }
 
         context.response.writePage(form);
     }
 
+        /**
+     * Render upload interface (Step 1)
+     * @param {Form} form - Form object
+     * @param {Object} currentUser - Current user details
+     */
+    function renderUploadInterface(form, currentUser) {
+        // Native NetSuite Upload Button
+        const uploadButtonField = form.addField({
+            id: 'native_upload_section',
+            type: ui.FieldType.INLINEHTML,
+            label: 'Upload Receipt'
+        });
+
+        // Build the NetSuite native upload URL with current user context
+        const nativeUploadUrl = `https://td3011969.app.netsuite.com/app/common/media/expensereportmediaitem.nl?target=expense:expmediaitem&label=Attach+File&reportOwner=${currentUser.id}&entity=${currentUser.id}`;
+
+        uploadButtonField.defaultValue = `
+            <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 5px; margin: 15px 0;">
+                <h3 style="color: #1f4e79; margin-bottom: 15px;">📎 Upload Your Receipt</h3>
+                <p style="margin-bottom: 20px;">Click the button below to open NetSuite's native file upload window</p>
+                <button type="button"
+                        onclick="openNativeUpload('${nativeUploadUrl}')"
+                        style="background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">
+                    📁 Upload Receipt File
+                </button>
+                <p style="margin-top: 10px; font-size: 12px; color: #666;">
+                    Supported formats: PDF, JPG, PNG, GIF | Max size: ${commonLib.getScriptParameter(CONSTANTS.SCRIPT_PARAMS.MAX_FILE_SIZE, CONSTANTS.DEFAULT_VALUES.MAX_FILE_SIZE_MB)}MB
+                </p>
+            </div>
+        `;
+    }
+
     /**
-     * Process uploaded file
+     * Render processing interface (Step 2)
+     * @param {Form} form - Form object
+     * @param {Object} currentUser - Current user details
+     * @param {string} uploadedFileId - ID of uploaded file
+     * @param {string} uploadedFileName - Name of uploaded file
+     */
+    function renderProcessingInterface(form, currentUser, uploadedFileId, uploadedFileName) {
+        // Show uploaded file confirmation
+        const confirmationField = form.addField({
+            id: 'file_confirmation',
+            type: ui.FieldType.INLINEHTML,
+            label: 'Uploaded File'
+        });
+
+        confirmationField.defaultValue = `
+            <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                <h4>✓ File Uploaded Successfully!</h4>
+                <p><strong>File:</strong> ${uploadedFileName}</p>
+                <p><strong>File ID:</strong> ${uploadedFileId}</p>
+                <p>Click "Process Receipt" below to extract expense data using AI.</p>
+            </div>
+        `;
+
+        // Processing options
+        const processingField = form.addField({
+            id: 'processing_options',
+            type: ui.FieldType.INLINEHTML,
+            label: 'Processing Options'
+        });
+
+        processingField.defaultValue = `
+            <div style="text-align: center; padding: 20px; background: #e7f3ff; border-radius: 5px; margin: 15px 0;">
+                <h3 style="color: #1f4e79; margin-bottom: 15px;">🤖 AI Processing</h3>
+                <p style="margin-bottom: 20px;">Ready to extract expense data from your receipt using Oracle OCI Document Understanding and NetSuite LLM.</p>
+                <p style="margin-bottom: 20px; font-size: 14px; color: #666;">
+                    This will automatically extract: Vendor, Amount, Date, Category, and Description
+                </p>
+            </div>
+        `;
+
+        // Process button
+        form.addSubmitButton({
+            label: 'Process Receipt'
+        });
+
+        // Upload different file button
+        form.addButton({
+            id: 'btn_upload_different',
+            label: 'Upload Different File',
+            functionName: 'uploadDifferentFile'
+        });
+    }
+
+    /**
+     * Process uploaded file or trigger processing
      * @param {Object} context - Request context
      */
     function processFileUpload(context) {
@@ -145,52 +234,17 @@ function(ui, file, record, runtime, url, redirect, encode, commonLib, ociLib) {
             const parameters = context.request.parameters;
             const files = context.request.files;
 
-            commonLib.logOperation('process_file_upload_start', {
-                trackingId: trackingId,
-                userId: parameters.user_id,
-                hasFile: !!files.receipt_file
-            });
+            // Check if this is a processing trigger (Step 2) or file upload (Step 1)
+            const uploadedFileId = parameters.uploaded_file_id;
+            const uploadedFileName = parameters.uploaded_file_name;
 
-            // Validate file upload
-            if (!files.receipt_file) {
-                throw new Error('No file was uploaded. Please select a receipt file to upload.');
+            if (uploadedFileId) {
+                // Step 2: Trigger processing of already uploaded file
+                return triggerProcessing(context, uploadedFileId, uploadedFileName, trackingId);
+            } else {
+                // Step 1: Handle file upload
+                return handleFileUpload(context, trackingId);
             }
-
-            const uploadedFile = files.receipt_file;
-
-            // Validate file
-            const validation = validateUploadedFile(uploadedFile);
-            if (!validation.isValid) {
-                throw new Error(validation.message);
-            }
-
-            // Save file using Enhanced File Security
-            const savedFile = saveFileWithEnhancedSecurity(uploadedFile, parameters.user_id);
-
-            // Create expense capture record
-            const expenseRecord = createExpenseCaptureRecord({
-                file: savedFile,
-                userId: parameters.user_id,
-                trackingId: trackingId
-            });
-
-            // Trigger processing (if using Map/Reduce)
-            triggerProcessing(expenseRecord.id);
-
-            commonLib.logOperation('process_file_upload_success', {
-                trackingId: trackingId,
-                expenseRecordId: expenseRecord.id,
-                fileId: savedFile.id,
-                fileName: savedFile.name
-            });
-
-            // Redirect to success page
-            return showSuccessPage(context, {
-                expenseRecordId: expenseRecord.id,
-                fileName: savedFile.name,
-                trackingId: trackingId,
-                isEmployeeCenter: parameters.is_employee_center === 'T'
-            });
 
         } catch (error) {
             commonLib.logOperation('process_file_upload_error', {
@@ -200,6 +254,198 @@ function(ui, file, record, runtime, url, redirect, encode, commonLib, ociLib) {
 
             return showErrorPage(context, error);
         }
+    }
+
+    /**
+     * Handle initial file upload (Step 1)
+     * @param {Object} context - Request context
+     * @param {string} trackingId - Tracking ID for this operation
+     */
+    function handleFileUpload(context, trackingId) {
+        const parameters = context.request.parameters;
+        const files = context.request.files;
+        const uploadedFile = files.receipt_file;
+
+        commonLib.logOperation('handle_file_upload_start', {
+            trackingId: trackingId,
+            userId: parameters.user_id,
+            hasFile: !!uploadedFile
+        });
+
+        // Validate file upload
+        if (!uploadedFile) {
+            throw new Error('No file was uploaded. Please select a receipt file to upload.');
+        }
+
+        // Validate file
+        const validation = validateUploadedFile(uploadedFile);
+        if (!validation.isValid) {
+            throw new Error(validation.message);
+        }
+
+        // Save file using Enhanced File Security
+        const savedFile = saveFileWithEnhancedSecurity(uploadedFile, parameters.user_id);
+
+        commonLib.logOperation('file_upload_success', {
+            trackingId: trackingId,
+            fileId: savedFile.id,
+            fileName: savedFile.name,
+            userId: parameters.user_id
+        });
+
+        // Redirect back to form with file information for processing step
+        return redirectToProcessingStep(context, savedFile.id, savedFile.name);
+    }
+
+    /**
+     * Trigger processing of uploaded file (Step 2)
+     * @param {Object} context - Request context
+     * @param {string} fileId - ID of uploaded file
+     * @param {string} fileName - Name of uploaded file
+     * @param {string} trackingId - Tracking ID for this operation
+     */
+    function triggerProcessing(context, fileId, fileName, trackingId) {
+        const parameters = context.request.parameters;
+
+        commonLib.logOperation('trigger_processing_start', {
+            trackingId: trackingId,
+            fileId: fileId,
+            fileName: fileName,
+            userId: parameters.user_id
+        });
+
+        // Start Map/Reduce script with file information
+        const mrTaskId = startMapReduceProcessing(fileId, fileName, parameters.user_id, trackingId);
+
+        commonLib.logOperation('processing_triggered', {
+            trackingId: trackingId,
+            fileId: fileId,
+            mrTaskId: mrTaskId
+        });
+
+        // Show processing started page
+        return showProcessingStartedPage(context, {
+            fileName: fileName,
+            trackingId: trackingId,
+            mrTaskId: mrTaskId
+        });
+    }
+
+    /**
+     * Start Map/Reduce script to process the file
+     * @param {string} fileId - ID of file to process
+     * @param {string} fileName - Name of file
+     * @param {string} userId - User ID
+     * @param {string} trackingId - Tracking ID
+     * @returns {string} Map/Reduce task ID
+     */
+    function startMapReduceProcessing(fileId, fileName, userId, trackingId) {
+        try {
+            const mrTask = task.create({
+                taskType: task.TaskType.MAP_REDUCE,
+                scriptId: CONSTANTS.SCRIPT_IDS.PROCESS_MR,
+                deploymentId: CONSTANTS.DEPLOYMENT_IDS.PROCESS_MR,
+                params: {
+                    'custscript_ains_file_id': fileId,
+                    'custscript_ains_file_name': fileName,
+                    'custscript_ains_user_id': userId,
+                    'custscript_ains_tracking_id': trackingId
+                }
+            });
+
+            const taskId = mrTask.submit();
+
+            commonLib.logOperation('mr_task_submitted', {
+                taskId: taskId,
+                fileId: fileId,
+                fileName: fileName,
+                userId: userId,
+                trackingId: trackingId
+            });
+
+            return taskId;
+
+        } catch (error) {
+            commonLib.logOperation('mr_task_submission_error', {
+                error: error.message,
+                fileId: fileId,
+                trackingId: trackingId
+            }, 'error');
+
+            throw new Error(`Failed to start processing: ${error.message}`);
+        }
+    }
+
+    /**
+     * Redirect to processing step with file information
+     * @param {Object} context - Request context
+     * @param {string} fileId - ID of uploaded file
+     * @param {string} fileName - Name of uploaded file
+     */
+    function redirectToProcessingStep(context, fileId, fileName) {
+        const currentUrl = url.resolveScript({
+            scriptId: runtime.getCurrentScript().id,
+            deploymentId: runtime.getCurrentScript().deploymentId,
+            params: {
+                uploaded_file_id: fileId,
+                uploaded_file_name: fileName
+            }
+        });
+
+        redirect.redirect({
+            url: currentUrl
+        });
+    }
+
+    /**
+     * Show processing started page
+     * @param {Object} context - Request context
+     * @param {Object} details - Processing details
+     */
+    function showProcessingStartedPage(context, details) {
+        const form = ui.createForm({
+            title: 'Processing Started'
+        });
+
+        const statusField = form.addField({
+            id: 'processing_status',
+            type: ui.FieldType.INLINEHTML,
+            label: 'Status'
+        });
+
+        statusField.defaultValue = `
+            <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                <h3 style="margin-top: 0;">🔄 Processing Started!</h3>
+                <p><strong>File:</strong> ${details.fileName}</p>
+                <p><strong>Tracking ID:</strong> ${details.trackingId}</p>
+                <p><strong>Task ID:</strong> ${details.mrTaskId}</p>
+                <p>Your receipt is being processed by AI. The system will:</p>
+                <ul>
+                    <li>Extract text using Oracle OCI Document Understanding</li>
+                    <li>Format data using NetSuite LLM</li>
+                    <li>Create expense capture record with extracted details</li>
+                </ul>
+                <p><em>Processing typically takes 1-2 minutes. Check your dashboard for updates.</em></p>
+            </div>
+        `;
+
+        // Add action buttons
+        form.addButton({
+            id: 'btn_upload_another',
+            label: 'Upload Another Receipt',
+            functionName: 'uploadAnother'
+        });
+
+        form.addButton({
+            id: 'btn_return_dashboard',
+            label: 'Return to Dashboard',
+            functionName: 'returnToDashboard'
+        });
+
+        // Add client script for button actions
+        form.clientScriptModulePath = '../ClientScripts/AINS_CS_ReceiptUploadSuccess.js';
+
+        context.response.writePage(form);
     }
 
     /**
@@ -247,10 +493,41 @@ function(ui, file, record, runtime, url, redirect, encode, commonLib, ociLib) {
      */
     function saveFileWithEnhancedSecurity(uploadedFile, userId) {
         try {
+            // Determine file type with fallback logic
+            let fileType = uploadedFile.type || uploadedFile.fileType;
+
+            if (!fileType) {
+                // Extract file type from filename
+                const fileName = uploadedFile.name || '';
+                const extension = fileName.split('.').pop().toLowerCase();
+
+                // Map common extensions to NetSuite file types
+                const extensionToType = {
+                    'pdf': file.Type.PDF,
+                    'jpg': file.Type.JPGIMAGE,
+                    'jpeg': file.Type.JPGIMAGE,
+                    'png': file.Type.PNGIMAGE,
+                    'gif': file.Type.GIFIMAGE,
+                    'tiff': file.Type.TIFFIMAGE,
+                    'tif': file.Type.TIFFIMAGE
+                };
+
+                fileType = extensionToType[extension] || file.Type.PLAINTEXT;
+            }
+
+            // Log file details for debugging
+            commonLib.logOperation('save_file_details', {
+                fileName: uploadedFile.name,
+                originalType: uploadedFile.type,
+                originalFileType: uploadedFile.fileType,
+                determinedFileType: fileType,
+                fileSize: uploadedFile.size
+            });
+
             // Create file record with Enhanced File Security pattern
             const fileRecord = file.create({
                 name: `AINS_${Date.now()}_${uploadedFile.name}`,
-                fileType: uploadedFile.type,
+                fileType: fileType,
                 contents: uploadedFile.getContents(),
                 description: `AI NS Expense Receipt - ${new Date().toLocaleDateString()}`,
                 folder: getExpenseFolderId(userId), // This leverages Enhanced File Security
@@ -266,7 +543,8 @@ function(ui, file, record, runtime, url, redirect, encode, commonLib, ociLib) {
             commonLib.logOperation('save_file_error', {
                 fileName: uploadedFile.name,
                 userId: userId,
-                error: error.message
+                error: error.message,
+                uploadedFileProps: Object.keys(uploadedFile)
             }, 'error');
 
             throw new Error(`Failed to save file: ${error.message}`);
@@ -288,86 +566,6 @@ function(ui, file, record, runtime, url, redirect, encode, commonLib, ociLib) {
         } catch (error) {
             // Fallback to general folder
             return -15;
-        }
-    }
-
-    /**
-     * Create expense capture record
-     * @param {Object} options - Record creation options
-     * @returns {Record} Created record
-     */
-    function createExpenseCaptureRecord(options) {
-        try {
-            const expenseRecord = record.create({
-                type: CONSTANTS.RECORD_TYPES.EXPENSE_CAPTURE,
-                isDynamic: true
-            });
-
-            // Set required fields
-            expenseRecord.setValue({
-                fieldId: CONSTANTS.FIELDS.FILE_ATTACHMENT,
-                value: options.file.id
-            });
-
-            expenseRecord.setValue({
-                fieldId: CONSTANTS.FIELDS.CREATED_BY,
-                value: options.userId
-            });
-
-            expenseRecord.setValue({
-                fieldId: CONSTANTS.FIELDS.PROCESSING_STATUS,
-                value: CONSTANTS.STATUS.PENDING
-            });
-
-            // Set file metadata
-            expenseRecord.setValue({
-                fieldId: CONSTANTS.FIELDS.FILE_SIZE,
-                value: Math.round(options.file.size / 1024) // Convert to KB
-            });
-
-            expenseRecord.setValue({
-                fieldId: CONSTANTS.FIELDS.FILE_TYPE,
-                value: options.file.fileType || options.file.name.split('.').pop().toLowerCase()
-            });
-
-            // Save record
-            const recordId = expenseRecord.save();
-
-            commonLib.logOperation('expense_record_created', {
-                recordId: recordId,
-                fileId: options.file.id,
-                userId: options.userId,
-                trackingId: options.trackingId
-            });
-
-            return { id: recordId, record: expenseRecord };
-
-        } catch (error) {
-            throw new Error(`Failed to create expense record: ${error.message}`);
-        }
-    }
-
-    /**
-     * Trigger processing for the uploaded receipt
-     * @param {string} expenseRecordId - ID of expense capture record
-     */
-    function triggerProcessing(expenseRecordId) {
-        try {
-            // The Map/Reduce script will automatically pick up records with PENDING status
-            // We could also trigger it manually here if needed
-
-            commonLib.logOperation('processing_triggered', {
-                expenseRecordId: expenseRecordId,
-                method: 'automatic'
-            });
-
-        } catch (error) {
-            commonLib.logOperation('trigger_processing_error', {
-                expenseRecordId: expenseRecordId,
-                error: error.message
-            }, 'error');
-
-            // Don't throw error as the file is already saved and record created
         }
     }
 
@@ -420,6 +618,46 @@ function(ui, file, record, runtime, url, redirect, encode, commonLib, ociLib) {
 
         // Add client script for button actions
         form.clientScriptModulePath = '../ClientScripts/AINS_CS_ReceiptUploadSuccess.js';
+
+        context.response.writePage(form);
+    }
+
+    /**
+     * Show page when recent file cannot be found
+     * @param {Object} context - Request context
+     */
+    function showRecentFileNotFoundPage(context) {
+        const form = ui.createForm({
+            title: 'File Not Found'
+        });
+
+        const messageField = form.addField({
+            id: 'not_found_message',
+            type: ui.FieldType.INLINEHTML,
+            label: 'Status'
+        });
+
+        messageField.defaultValue = `
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                <h3 style="margin-top: 0;">⚠️ File Not Found</h3>
+                <p>We couldn't locate your recently uploaded file. This can happen if:</p>
+                <ul>
+                    <li>The file upload didn't complete successfully</li>
+                    <li>The file was uploaded to a different location</li>
+                    <li>There was a delay in file processing</li>
+                </ul>
+                <p>Please try uploading your file again using the button below.</p>
+            </div>
+        `;
+
+        form.addButton({
+            id: 'btn_try_again',
+            label: 'Upload Again',
+            functionName: 'uploadAnother'
+        });
+
+        // Add client script for button actions
+        form.clientScriptModulePath = '../ClientScripts/AINS_CS_ReceiptUpload.js';
 
         context.response.writePage(form);
     }
@@ -516,6 +754,121 @@ function(ui, file, record, runtime, url, redirect, encode, commonLib, ociLib) {
                 <p><em>💡 Tip: You can import processed expenses into your expense reports later!</em></p>
             </div>
         `;
+    }
+
+                /**
+     * Find the most recently uploaded file by the current user
+     * @param {string} userId - Current user ID
+     * @returns {Object|null} File object with id and name, or null if not found
+     */
+            function findRecentlyUploadedFile(userId) {
+        try {
+            // Add a small delay to allow file to be fully committed to database
+            // This is a synchronous delay in the server-side script
+            const startTime = Date.now();
+            while (Date.now() - startTime < 2000) {
+                // 2 second delay
+            }
+
+            // Search for files uploaded by the current user in the last 10 minutes
+            const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+
+            // Create saved search for files
+            const fileSearch = search.create({
+                type: "file",
+                columns: [
+                    search.createColumn({ name: "name", label: "Name" }),
+                    search.createColumn({ name: "folder", label: "Folder" }),
+                    search.createColumn({ name: "created", label: "Date Created" }),
+                    search.createColumn({ name: "owner", label: "Owner" })
+                ],
+                filters: [
+                    search.createFilter({
+                        name: 'created',
+                        operator: search.Operator.ONORAFTER,
+                        values: tenMinutesAgo
+                    })
+                ]
+            });
+
+            // Run the search and get results
+            const allRecentFiles = [];
+            fileSearch.run().each(function(result) {
+                allRecentFiles.push({
+                    id: result.id,
+                    name: result.getValue('name'),
+                    created: result.getValue('created'),
+                    folder: result.getValue('folder'),
+                    owner: result.getValue('owner')
+                });
+                return allRecentFiles.length < 20; // Limit to first 20 results
+            });
+
+            // Log ALL recent files for debugging
+            commonLib.logOperation('debug_all_recent_files', {
+                userId: userId,
+                searchTime: tenMinutesAgo.toISOString(),
+                allRecentCount: allRecentFiles.length,
+                allRecentFiles: allRecentFiles.slice(0, 10).map(f => ({
+                    id: f.id,
+                    name: f.name,
+                    created: f.created,
+                    folder: f.folder,
+                    owner: f.owner,
+                    matchesUser: f.owner == userId
+                }))
+            });
+
+            // Find files owned by the current user
+            const userFiles = allRecentFiles.filter(f => f.owner == userId);
+
+            // Log specific user files
+            commonLib.logOperation('recent_file_search', {
+                userId: userId,
+                userIdType: typeof userId,
+                searchTime: tenMinutesAgo.toISOString(),
+                resultsCount: userFiles.length,
+                userFiles: userFiles.slice(0, 3).map(f => ({
+                    id: f.id,
+                    name: f.name,
+                    created: f.created,
+                    folder: f.folder
+                }))
+            });
+
+            if (userFiles.length > 0) {
+                // Sort by creation date (most recent first) and take the first one
+                userFiles.sort((a, b) => new Date(b.created) - new Date(a.created));
+                const fileResult = userFiles[0];
+
+                commonLib.logOperation('found_recent_file', {
+                    fileId: fileResult.id,
+                    fileName: fileResult.name,
+                    created: fileResult.created,
+                    folder: fileResult.folder,
+                    userId: userId
+                });
+
+                return {
+                    id: fileResult.id,
+                    name: fileResult.name
+                };
+            }
+
+                        commonLib.logOperation('no_recent_file_found', {
+                userId: userId,
+                searchTime: tenMinutesAgo.toISOString()
+            });
+            return null;
+
+        } catch (error) {
+            commonLib.logOperation('find_recent_file_error', {
+                userId: userId,
+                error: error.message,
+                stack: error.stack
+            }, 'error');
+            return null;
+        }
     }
 
     /**

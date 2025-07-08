@@ -42,14 +42,15 @@ function(runtime, log, url, query) {
 
         SCRIPT_IDS: {
             UPLOAD_SUITELET: 'customscript_ains_sl_receiptupload',
-            PROCESS_MR: '_nsai_mr_process_receipts',
-            IMPORT_MODAL: '_nsai_sl_expense_import_modal',
-            EMPLOYEE_PORTLET: '_nsai_pl_empcentportlet',
-            ER_CLIENT_SCRIPT: '_nsai_cs_expense_report_import'
+            PROCESS_MR: 'customscript_ains_mr_processreceipts',
+            IMPORT_MODAL: 'customscript_ains_sl_expenseimportmodal',
+            EMPLOYEE_PORTLET: 'customscript_ains_pl_empcentportlet',
+            ER_CLIENT_SCRIPT: 'customscript_ains_cs_expensereportimport'
         },
 
         DEPLOYMENT_IDS: {
-            UPLOAD_SUITELET: 'customdeploy_ains_sl_receiptupload'
+            UPLOAD_SUITELET: 'customdeploy_ains_sl_receiptupload',
+            PROCESS_MR: 'customdeploy_ains_mr_processreceipts'
         },
 
         SCRIPT_PARAMS: {
@@ -60,14 +61,14 @@ function(runtime, log, url, query) {
             AUTO_ASSIGN_CATEGORIES: 'custscript_ains_auto_assign'
         },
 
-        SUPPORTED_FILE_TYPES: ['pdf', 'jpg', 'jpeg', 'png', 'tiff', 'gif'],
-
         DEFAULT_VALUES: {
             MAX_FILE_SIZE_MB: 10,
-            CONFIDENCE_THRESHOLD: 0.8,
             LLM_MODEL: 'command-r',
+            CONFIDENCE_THRESHOLD: 0.8,
             AUTO_ASSIGN_CATEGORIES: true
-        }
+        },
+
+        SUPPORTED_FILE_TYPES: ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'tiff', 'tif']
     };
 
     /**
@@ -115,33 +116,33 @@ function(runtime, log, url, query) {
         const maxSizeBytes = maxSizeMB * 1024 * 1024;
 
         if (fileSizeBytes <= maxSizeBytes) {
-            return { isValid: true, message: 'File size valid' };
+            return { isValid: true, message: 'File size is valid' };
         } else {
             return {
                 isValid: false,
-                message: `File size (${(fileSizeBytes / 1024 / 1024).toFixed(2)}MB) exceeds maximum limit of ${maxSizeMB}MB`
+                message: `File size (${Math.round(fileSizeBytes / 1024 / 1024)}MB) exceeds maximum allowed size of ${maxSizeMB}MB`
             };
         }
     }
 
     /**
-     * Validate file type against supported formats
-     * @param {string} fileName - Name of the file
+     * Validate file type against supported types
+     * @param {string} fileName - File name with extension
      * @returns {Object} Validation result {isValid: boolean, message: string}
      */
     function validateFileType(fileName) {
         if (!fileName) {
-            return { isValid: false, message: 'File name is required' };
+            return { isValid: false, message: 'No file name provided' };
         }
 
-        const fileExtension = fileName.toLowerCase().split('.').pop();
+        const extension = fileName.split('.').pop().toLowerCase();
 
-        if (CONSTANTS.SUPPORTED_FILE_TYPES.includes(fileExtension)) {
-            return { isValid: true, message: 'File type supported' };
+        if (CONSTANTS.SUPPORTED_FILE_TYPES.includes(extension)) {
+            return { isValid: true, message: 'File type is supported' };
         } else {
             return {
                 isValid: false,
-                message: `File type '.${fileExtension}' not supported. Supported types: ${CONSTANTS.SUPPORTED_FILE_TYPES.join(', ')}`
+                message: `File type '${extension}' is not supported. Supported types: ${CONSTANTS.SUPPORTED_FILE_TYPES.join(', ').toUpperCase()}`
             };
         }
     }
@@ -280,17 +281,17 @@ function(runtime, log, url, query) {
     }
 
     /**
-     * Create HTML for upload progress indicator
-     * @param {string} containerId - Container element ID
+     * Create progress indicator HTML
+     * @param {string} id - Element ID for the progress indicator
      * @returns {string} HTML for progress indicator
      */
-    function createProgressIndicator(containerId) {
+    function createProgressIndicator(id) {
         return `
-            <div id="${containerId}" style="display: none; margin-top: 10px;">
-                <div style="background-color: #f0f0f0; border-radius: 5px; padding: 3px;">
-                    <div style="background-color: #4CAF50; height: 20px; border-radius: 3px; width: 0%; transition: width 0.3s ease;" id="${containerId}_bar"></div>
+            <div id="${id}" style="display: none;">
+                <div style="background: #f0f0f0; border-radius: 10px; padding: 3px; margin: 10px 0;">
+                    <div style="background: #007bff; height: 20px; border-radius: 7px; width: 0%; transition: width 0.3s ease;" id="${id}_bar"></div>
                 </div>
-                <div style="text-align: center; margin-top: 5px; font-size: 12px;" id="${containerId}_text">Uploading...</div>
+                <div style="text-align: center; font-size: 12px; color: #666;" id="${id}_text">Processing...</div>
             </div>
         `;
     }

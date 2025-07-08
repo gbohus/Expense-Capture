@@ -2,328 +2,50 @@
  * @NApiVersion 2.1
  * @NScriptType MapReduceScript
  * @NModuleScope SameAccount
- * @description Map/Reduce script for processing receipts with OCI and LLM
+ * @description Map/Reduce script to process individual receipt files with OCI Document Understanding and NetSuite LLM
  */
 
-define(['N/query', 'N/record', 'N/file', 'N/runtime', 'N/email', 'N/task',
+define(['N/file', 'N/record', 'N/runtime', 'N/search',
         '../Libraries/AINS_LIB_Common', '../Libraries/AINS_LIB_OCIIntegration', '../Libraries/AINS_LIB_LLMProcessor'],
-function(query, record, file, runtime, email, task, commonLib, ociLib, llmLib) {
+function(file, record, runtime, search, commonLib, ociLib, llmLib) {
 
     const CONSTANTS = commonLib.CONSTANTS;
 
     /**
-     * Defines the function definition that is executed at the beginning of the map/reduce process
-     * @returns {Array|Object|Search|RecordRef} inputSummary
+     * Get input data - in this case, just the file information passed as parameters
+     * @returns {Object} File processing data
      */
     function getInputData() {
         try {
-            commonLib.logOperation('mapreduce_getInputData_start', {
-                timestamp: new Date().toISOString()
-            });
+            const script = runtime.getCurrentScript();
 
-            // Query for expense capture records with PENDING status using SuiteQL
-            const expenseQuery = `
-                SELECT
-                    internalid,
-                    custrecord_ains_file_attachment,
-                    custrecord_ains_created_by,
-                    custrecord_ains_processing_status,
-                    created
-                FROM customrecord_ains_expense_capture
-                WHERE custrecord_ains_processing_status = '${CONSTANTS.STATUS.PENDING}'
-                AND isinactive = 'F'
-                ORDER BY created ASC
-            `;
+            // Get parameters passed from Suitelet
+            const fileId = script.getParameter({ name: 'custscript_ains_file_id' });
+            const fileName = script.getParameter({ name: 'custscript_ains_file_name' });
+            const userId = script.getParameter({ name: 'custscript_ains_user_id' });
+            const trackingId = script.getParameter({ name: 'custscript_ains_tracking_id' });
 
-            const queryResult = query.runSuiteQL({
-                query: expenseQuery
-            });
-
-            const resultCount = queryResult.results.length;
-
-            commonLib.logOperation('mapreduce_getInputData_complete', {
-                recordCount: resultCount
-            });
-
-            return queryResult.results;
-
-        } catch (error) {
-            commonLib.logOperation('mapreduce_getInputData_error', {
-                error: error.message
-            }, 'error');
-
-            throw error;
-        }
-    }
-
-    /**
-     * Defines the function definition that is executed in the map stage of the map/reduce process
-     * @param {Object} context
-     * @param {string} context.key - Key to be processed during the map stage
-     * @param {string} context.value - Value to be processed during the map stage
-     */
-    function map(context) {
-        const trackingId = commonLib.generateTrackingId();
-
-        try {
-            const queryResult = JSON.parse(context.value);
-            const expenseRecordId = queryResult.values[0]; // internalid
-            const fileId = queryResult.values[1]; // custrecord_ains_file_attachment
-            const userId = queryResult.values[2]; // custrecord_ains_created_by
-
-            commonLib.logOperation('mapreduce_map_start', {
-                trackingId: trackingId,
-                expenseRecordId: expenseRecordId,
-                fileId: fileId
-            });
-
-            // Update record status to PROCESSING
-            updateRecordStatus(expenseRecordId, CONSTANTS.STATUS.PROCESSING);
-
-            // Load and validate file
-            if (!fileId) {
-                throw new Error('No file attachment found');
+            if (!fileId || !fileName || !userId) {
+                throw new Error('Missing required parameters: fileId, fileName, or userId');
             }
 
-            const receiptFile = file.load({ id: fileId });
-
-            // Process with OCI Document Understanding
-            const ocrResult = ociLib.processReceiptDocument(receiptFile, {
-                documentType: 'RECEIPT',
-                features: ['TEXT_EXTRACTION', 'FIELD_EXTRACTION', 'TABLE_EXTRACTION'],
-                timeout: 30000
-            });
-
-            if (!ocrResult.success) {
-                throw new Error(`OCR processing failed: ${ocrResult.error}`);
-            }
-
-            // Prepare data for reduce stage
-            const mapOutput = {
-                expenseRecordId: expenseRecordId,
+            commonLib.logOperation('mr_getInputData', {
                 fileId: fileId,
-                ocrResult: ocrResult,
-                trackingId: trackingId,
-                userId: userId
-            };
-
-            commonLib.logOperation('mapreduce_map_success', {
-                trackingId: trackingId,
-                expenseRecordId: expenseRecordId,
-                ocrSuccess: ocrResult.success,
-                confidence: ocrResult.expenseData ? ocrResult.expenseData.confidence : null
-            });
-
-            // Output to reduce stage
-            context.write(expenseRecordId, mapOutput);
-
-        } catch (error) {
-            commonLib.logOperation('mapreduce_map_error', {
-                trackingId: trackingId,
-                expenseRecordId: context.key,
-                error: error.message
-            }, 'error');
-
-            // Update record with error status
-            try {
-                updateRecordWithError(context.key, error.message);
-            } catch (updateError) {
-                commonLib.logOperation('mapreduce_map_update_error', {
-                    expenseRecordId: context.key,
-                    updateError: updateError.message
-                }, 'error');
-            }
-        }
-    }
-
-    /**
-     * Defines the function definition that is executed in the reduce stage of the map/reduce process
-     * @param {Object} context
-     * @param {string} context.key - Key to be processed during the reduce stage
-     * @param {Array} context.values - All values associated with a unique key that was passed to the reduce stage
-     */
-    function reduce(context) {
-        const expenseRecordId = context.key;
-
-        try {
-            // Parse the map output
-            const mapOutput = JSON.parse(context.values[0]);
-            const { ocrResult, trackingId, userId } = mapOutput;
-
-            commonLib.logOperation('mapreduce_reduce_start', {
-                trackingId: trackingId,
-                expenseRecordId: expenseRecordId
-            });
-
-            // Get available expense categories
-            const expenseCategories = commonLib.getExpenseCategories();
-
-            // Process with NetSuite LLM
-            const llmResult = llmLib.processExpenseDataWithLLM(ocrResult.expenseData, {
-                model: getScriptParameter('LLM_MODEL', 'command-r'),
-                expenseCategories: expenseCategories,
-                confidenceThreshold: getScriptParameter('CONFIDENCE_THRESHOLD', 0.8)
-            });
-
-            if (!llmResult.success) {
-                throw new Error(`LLM processing failed: ${llmResult.error}`);
-            }
-
-            // Update expense capture record with processed data
-            const updateResult = updateExpenseRecord(expenseRecordId, {
-                ocrData: ocrResult,
-                llmData: llmResult,
+                fileName: fileName,
+                userId: userId,
                 trackingId: trackingId
             });
 
-            commonLib.logOperation('mapreduce_reduce_success', {
-                trackingId: trackingId,
-                expenseRecordId: expenseRecordId,
-                vendor: llmResult.expenseData.vendor,
-                amount: llmResult.expenseData.amount,
-                confidence: llmResult.expenseData.confidence,
-                requiresReview: llmResult.expenseData.requiresReview
-            });
-
-            // Send notification if configured and high confidence
-            if (shouldSendNotification(llmResult.expenseData)) {
-                sendProcessingNotification(userId, expenseRecordId, llmResult.expenseData);
-            }
+            // Return single file for processing
+            return [{
+                fileId: fileId,
+                fileName: fileName,
+                userId: userId,
+                trackingId: trackingId
+            }];
 
         } catch (error) {
-            commonLib.logOperation('mapreduce_reduce_error', {
-                expenseRecordId: expenseRecordId,
-                error: error.message
-            }, 'error');
-
-            // Update record with error status
-            updateRecordWithError(expenseRecordId, error.message);
-        }
-    }
-
-    /**
-     * Defines the function definition that is executed at the completion of the map/reduce process
-     * @param {Object} context
-     * @param {number} context.concurrency - Maximum concurrency number when executing the reduce stage
-     * @param {Date} context.dateCreated - Date and time when the map/reduce job was created
-     * @param {boolean} context.isRestarted - Indicates whether the current invocation represents a restart of a previously failed execution
-     * @param {Iterator} context.output - Serialized keys and values that were saved as output during the reduce stage
-     * @param {number} context.seconds - Total seconds elapsed when running the map/reduce job
-     * @param {number} context.usage - Total number of usage units consumed when running the map/reduce job
-     * @param {number} context.yields - Total number of yields when running the map/reduce job
-     * @param {Object} context.inputSummary - Summary of the input stage
-     * @param {Object} context.mapSummary - Summary of the map stage
-     * @param {Object} context.reduceSummary - Summary of the reduce stage
-     */
-    function summarize(context) {
-        try {
-            const summary = {
-                totalRecords: context.inputSummary.count,
-                mapErrors: context.mapSummary.errors ? context.mapSummary.errors.length : 0,
-                reduceErrors: context.reduceSummary.errors ? context.reduceSummary.errors.length : 0,
-                totalUsage: context.usage,
-                totalTime: context.seconds,
-                yields: context.yields
-            };
-
-            commonLib.logOperation('mapreduce_summarize', summary);
-
-            // Log any errors that occurred
-            if (context.mapSummary.errors && context.mapSummary.errors.length > 0) {
-                context.mapSummary.errors.forEach(error => {
-                    commonLib.logOperation('mapreduce_map_stage_error', {
-                        stage: 'map',
-                        key: error.key,
-                        error: error.message
-                    }, 'error');
-                });
-            }
-
-            if (context.reduceSummary.errors && context.reduceSummary.errors.length > 0) {
-                context.reduceSummary.errors.forEach(error => {
-                    commonLib.logOperation('mapreduce_reduce_stage_error', {
-                        stage: 'reduce',
-                        key: error.key,
-                        error: error.message
-                    }, 'error');
-                });
-            }
-
-            // Schedule next run if there are still pending records
-            scheduleNextRun();
-
-        } catch (error) {
-            commonLib.logOperation('mapreduce_summarize_error', {
-                error: error.message
-            }, 'error');
-        }
-    }
-
-    /**
-     * Update record status
-     * @param {string} recordId - Record ID
-     * @param {string} status - New status
-     */
-    function updateRecordStatus(recordId, status) {
-        try {
-            record.submitFields({
-                type: CONSTANTS.RECORD_TYPES.EXPENSE_CAPTURE,
-                id: recordId,
-                values: {
-                    [CONSTANTS.FIELDS.PROCESSING_STATUS]: status
-                }
-            });
-        } catch (error) {
-            commonLib.logOperation('update_record_status_error', {
-                recordId: recordId,
-                status: status,
-                error: error.message
-            }, 'error');
-        }
-    }
-
-    /**
-     * Update expense record with processed data
-     * @param {string} recordId - Record ID
-     * @param {Object} data - Processed data
-     * @returns {boolean} Success status
-     */
-    function updateExpenseRecord(recordId, data) {
-        try {
-            const { ocrData, llmData, trackingId } = data;
-            const expenseData = llmData.expenseData;
-
-            const updateValues = {
-                [CONSTANTS.FIELDS.PROCESSING_STATUS]: CONSTANTS.STATUS.COMPLETE,
-                [CONSTANTS.FIELDS.VENDOR_NAME]: expenseData.vendor,
-                [CONSTANTS.FIELDS.EXPENSE_AMOUNT]: expenseData.amount,
-                [CONSTANTS.FIELDS.EXPENSE_DATE]: expenseData.date,
-                [CONSTANTS.FIELDS.EXPENSE_CATEGORY]: expenseData.categoryId,
-                [CONSTANTS.FIELDS.DESCRIPTION]: expenseData.description,
-                [CONSTANTS.FIELDS.CONFIDENCE_SCORE]: expenseData.confidence,
-                [CONSTANTS.FIELDS.PROCESSED_DATE]: new Date(),
-                [CONSTANTS.FIELDS.RAW_OCR_DATA]: JSON.stringify(ocrData.rawData),
-                [CONSTANTS.FIELDS.LLM_RESPONSE]: JSON.stringify({
-                    response: llmData.rawLLMResponse,
-                    model: llmData.model,
-                    trackingId: trackingId
-                })
-            };
-
-            // Clear any previous error messages
-            updateValues[CONSTANTS.FIELDS.ERROR_MESSAGE] = '';
-
-            record.submitFields({
-                type: CONSTANTS.RECORD_TYPES.EXPENSE_CAPTURE,
-                id: recordId,
-                values: updateValues
-            });
-
-            return true;
-
-        } catch (error) {
-            commonLib.logOperation('update_expense_record_error', {
-                recordId: recordId,
+            commonLib.logOperation('mr_getInputData_error', {
                 error: error.message
             }, 'error');
 
@@ -332,158 +54,371 @@ function(query, record, file, runtime, email, task, commonLib, ociLib, llmLib) {
     }
 
     /**
-     * Update record with error information
-     * @param {string} recordId - Record ID
+     * Map stage - Process the file with OCI Document Understanding
+     * @param {Object} context - Map context
+     */
+    function map(context) {
+        try {
+            const fileData = JSON.parse(context.value);
+            const { fileId, fileName, userId, trackingId } = fileData;
+
+            commonLib.logOperation('mr_map_start', {
+                fileId: fileId,
+                fileName: fileName,
+                userId: userId,
+                trackingId: trackingId
+            });
+
+            // Load the file
+            const fileObj = file.load({ id: fileId });
+
+            // Process with OCI Document Understanding
+            const ocrResults = ociLib.processDocument(fileObj.getContents(), fileName);
+
+            commonLib.logOperation('mr_map_ocr_complete', {
+                fileId: fileId,
+                trackingId: trackingId,
+                ocrResultsFound: !!ocrResults,
+                confidence: ocrResults ? ocrResults.confidence : null
+            });
+
+            // Pass data to reduce stage
+            context.write(fileId, {
+                fileId: fileId,
+                fileName: fileName,
+                userId: userId,
+                trackingId: trackingId,
+                fileSize: fileObj.size,
+                fileType: fileObj.fileType,
+                ocrResults: ocrResults
+            });
+
+        } catch (error) {
+            commonLib.logOperation('mr_map_error', {
+                error: error.message,
+                context: context.value
+            }, 'error');
+
+            // Write error data to reduce for error handling
+            const fileData = JSON.parse(context.value);
+            context.write(fileData.fileId, {
+                ...fileData,
+                error: error.message,
+                processingFailed: true
+            });
+        }
+    }
+
+    /**
+     * Reduce stage - Process OCR data with LLM and create custom record
+     * @param {Object} context - Reduce context
+     */
+    function reduce(context) {
+        try {
+            const data = JSON.parse(context.values[0]);
+            const { fileId, fileName, userId, trackingId, fileSize, fileType, ocrResults, error, processingFailed } = data;
+
+            commonLib.logOperation('mr_reduce_start', {
+                fileId: fileId,
+                trackingId: trackingId,
+                hasOcrResults: !!ocrResults,
+                processingFailed: !!processingFailed
+            });
+
+            if (processingFailed) {
+                // Create error record
+                createErrorRecord(fileId, fileName, userId, trackingId, fileSize, fileType, error);
+                return;
+            }
+
+            // Get available expense categories for LLM processing
+            const expenseCategories = llmLib.getExpenseCategories();
+
+            // Process with NetSuite LLM
+            const llmResults = llmLib.processWithLLM(ocrResults, expenseCategories);
+
+            commonLib.logOperation('mr_reduce_llm_complete', {
+                fileId: fileId,
+                trackingId: trackingId,
+                llmResultsFound: !!llmResults,
+                assignedCategory: llmResults ? llmResults.category_id : null
+            });
+
+            // Create expense capture record with processed data
+            const recordId = createExpenseCaptureRecord({
+                fileId: fileId,
+                fileName: fileName,
+                userId: userId,
+                trackingId: trackingId,
+                fileSize: fileSize,
+                fileType: fileType,
+                ocrResults: ocrResults,
+                llmResults: llmResults
+            });
+
+            commonLib.logOperation('mr_reduce_complete', {
+                fileId: fileId,
+                trackingId: trackingId,
+                recordId: recordId
+            });
+
+        } catch (error) {
+            commonLib.logOperation('mr_reduce_error', {
+                error: error.message,
+                fileId: context.key
+            }, 'error');
+
+            // Create error record
+            const data = JSON.parse(context.values[0]);
+            createErrorRecord(data.fileId, data.fileName, data.userId, data.trackingId,
+                            data.fileSize, data.fileType, error.message);
+        }
+    }
+
+    /**
+     * Create expense capture record with processed data
+     * @param {Object} options - Record creation options
+     * @returns {string} Created record ID
+     */
+    function createExpenseCaptureRecord(options) {
+        try {
+            const { fileId, fileName, userId, trackingId, fileSize, fileType, ocrResults, llmResults } = options;
+
+            const expenseRecord = record.create({
+                type: CONSTANTS.RECORD_TYPES.EXPENSE_CAPTURE,
+                isDynamic: true
+            });
+
+            // Set file attachment
+            expenseRecord.setValue({
+                fieldId: CONSTANTS.FIELDS.FILE_ATTACHMENT,
+                value: fileId
+            });
+
+            // Set user information
+            expenseRecord.setValue({
+                fieldId: CONSTANTS.FIELDS.CREATED_BY,
+                value: userId
+            });
+
+            // Set processing status
+            expenseRecord.setValue({
+                fieldId: CONSTANTS.FIELDS.PROCESSING_STATUS,
+                value: CONSTANTS.STATUS.COMPLETE
+            });
+
+            // Set extracted data from LLM
+            if (llmResults) {
+                if (llmResults.vendor) {
+                    expenseRecord.setValue({
+                        fieldId: CONSTANTS.FIELDS.VENDOR_NAME,
+                        value: llmResults.vendor
+                    });
+                }
+
+                if (llmResults.amount) {
+                    expenseRecord.setValue({
+                        fieldId: CONSTANTS.FIELDS.EXPENSE_AMOUNT,
+                        value: parseFloat(llmResults.amount)
+                    });
+                }
+
+                if (llmResults.date) {
+                    expenseRecord.setValue({
+                        fieldId: CONSTANTS.FIELDS.EXPENSE_DATE,
+                        value: new Date(llmResults.date)
+                    });
+                }
+
+                if (llmResults.category_id) {
+                    expenseRecord.setValue({
+                        fieldId: CONSTANTS.FIELDS.EXPENSE_CATEGORY,
+                        value: llmResults.category_id
+                    });
+                }
+
+                if (llmResults.description) {
+                    expenseRecord.setValue({
+                        fieldId: CONSTANTS.FIELDS.DESCRIPTION,
+                        value: llmResults.description
+                    });
+                }
+
+                if (llmResults.confidence) {
+                    expenseRecord.setValue({
+                        fieldId: CONSTANTS.FIELDS.CONFIDENCE_SCORE,
+                        value: parseFloat(llmResults.confidence)
+                    });
+                }
+            }
+
+            // Set file metadata
+            expenseRecord.setValue({
+                fieldId: CONSTANTS.FIELDS.FILE_SIZE,
+                value: Math.round(fileSize / 1024) // Convert to KB
+            });
+
+            expenseRecord.setValue({
+                fieldId: CONSTANTS.FIELDS.FILE_TYPE,
+                value: fileType || fileName.split('.').pop().toLowerCase()
+            });
+
+            // Set processing timestamp
+            expenseRecord.setValue({
+                fieldId: CONSTANTS.FIELDS.PROCESSED_DATE,
+                value: new Date()
+            });
+
+            // Set technical data
+            expenseRecord.setValue({
+                fieldId: CONSTANTS.FIELDS.RAW_OCR_DATA,
+                value: JSON.stringify(ocrResults)
+            });
+
+            expenseRecord.setValue({
+                fieldId: CONSTANTS.FIELDS.LLM_RESPONSE,
+                value: JSON.stringify(llmResults)
+            });
+
+            // Save record
+            const recordId = expenseRecord.save();
+
+            commonLib.logOperation('expense_record_created', {
+                recordId: recordId,
+                fileId: fileId,
+                userId: userId,
+                trackingId: trackingId,
+                vendor: llmResults ? llmResults.vendor : null,
+                amount: llmResults ? llmResults.amount : null
+            });
+
+            return recordId;
+
+        } catch (error) {
+            commonLib.logOperation('create_expense_record_error', {
+                error: error.message,
+                fileId: options.fileId,
+                trackingId: options.trackingId
+            }, 'error');
+
+            throw error;
+        }
+    }
+
+    /**
+     * Create error record when processing fails
+     * @param {string} fileId - File ID
+     * @param {string} fileName - File name
+     * @param {string} userId - User ID
+     * @param {string} trackingId - Tracking ID
+     * @param {number} fileSize - File size
+     * @param {string} fileType - File type
      * @param {string} errorMessage - Error message
      */
-    function updateRecordWithError(recordId, errorMessage) {
+    function createErrorRecord(fileId, fileName, userId, trackingId, fileSize, fileType, errorMessage) {
         try {
-            record.submitFields({
+            const expenseRecord = record.create({
                 type: CONSTANTS.RECORD_TYPES.EXPENSE_CAPTURE,
-                id: recordId,
-                values: {
-                    [CONSTANTS.FIELDS.PROCESSING_STATUS]: CONSTANTS.STATUS.ERROR,
-                    [CONSTANTS.FIELDS.ERROR_MESSAGE]: errorMessage,
-                    [CONSTANTS.FIELDS.PROCESSED_DATE]: new Date()
-                }
+                isDynamic: true
             });
-        } catch (error) {
-            commonLib.logOperation('update_record_with_error_failed', {
+
+            // Set file attachment
+            expenseRecord.setValue({
+                fieldId: CONSTANTS.FIELDS.FILE_ATTACHMENT,
+                value: fileId
+            });
+
+            // Set user information
+            expenseRecord.setValue({
+                fieldId: CONSTANTS.FIELDS.CREATED_BY,
+                value: userId
+            });
+
+            // Set error status
+            expenseRecord.setValue({
+                fieldId: CONSTANTS.FIELDS.PROCESSING_STATUS,
+                value: CONSTANTS.STATUS.ERROR
+            });
+
+            // Set error message
+            expenseRecord.setValue({
+                fieldId: CONSTANTS.FIELDS.ERROR_MESSAGE,
+                value: errorMessage
+            });
+
+            // Set file metadata
+            if (fileSize) {
+                expenseRecord.setValue({
+                    fieldId: CONSTANTS.FIELDS.FILE_SIZE,
+                    value: Math.round(fileSize / 1024)
+                });
+            }
+
+            if (fileType) {
+                expenseRecord.setValue({
+                    fieldId: CONSTANTS.FIELDS.FILE_TYPE,
+                    value: fileType
+                });
+            }
+
+            // Set processing timestamp
+            expenseRecord.setValue({
+                fieldId: CONSTANTS.FIELDS.PROCESSED_DATE,
+                value: new Date()
+            });
+
+            // Save error record
+            const recordId = expenseRecord.save();
+
+            commonLib.logOperation('error_record_created', {
                 recordId: recordId,
+                fileId: fileId,
+                userId: userId,
+                trackingId: trackingId,
+                error: errorMessage
+            });
+
+        } catch (error) {
+            commonLib.logOperation('create_error_record_failed', {
                 originalError: errorMessage,
-                updateError: error.message
+                createError: error.message,
+                fileId: fileId,
+                trackingId: trackingId
             }, 'error');
         }
     }
 
     /**
-     * Get script parameter with fallback
-     * @param {string} paramName - Parameter name
-     * @param {*} defaultValue - Default value
-     * @returns {*} Parameter value
+     * Summarize stage - Log overall processing results
+     * @param {Object} context - Summary context
      */
-    function getScriptParameter(paramName, defaultValue) {
-        return commonLib.getScriptParameter(
-            CONSTANTS.SCRIPT_PARAMS[paramName],
-            defaultValue
-        );
-    }
-
-    /**
-     * Determine if notification should be sent
-     * @param {Object} expenseData - Processed expense data
-     * @returns {boolean} Whether to send notification
-     */
-    function shouldSendNotification(expenseData) {
+    function summarize(context) {
         try {
-            // Send notification for high-confidence processing
-            return expenseData.confidence >= 0.9 && !expenseData.requiresReview;
-        } catch (error) {
-            return false;
-        }
-    }
+            const script = runtime.getCurrentScript();
+            const trackingId = script.getParameter({ name: 'custscript_ains_tracking_id' });
 
-    /**
-     * Send processing notification to user
-     * @param {string} userId - User ID
-     * @param {string} recordId - Expense record ID
-     * @param {Object} expenseData - Processed expense data
-     */
-    function sendProcessingNotification(userId, recordId, expenseData) {
-        try {
-            // This would send an email notification
-            // Simplified for now - could be expanded based on requirements
-
-            commonLib.logOperation('notification_sent', {
-                userId: userId,
-                recordId: recordId,
-                vendor: expenseData.vendor,
-                amount: expenseData.amount
+            commonLib.logOperation('mr_summarize', {
+                trackingId: trackingId,
+                inputStage: context.inputSummary,
+                mapStage: context.mapSummary,
+                reduceStage: context.reduceSummary,
+                errors: context.errors
             });
 
-        } catch (error) {
-            commonLib.logOperation('notification_error', {
-                userId: userId,
-                recordId: recordId,
-                error: error.message
-            }, 'error');
-        }
-    }
-
-    /**
-     * Schedule next Map/Reduce run if needed
-     */
-    function scheduleNextRun() {
-        try {
-            // Check if there are still pending records using SuiteQL
-            const pendingQuery = `
-                SELECT COUNT(*) as pending_count
-                FROM customrecord_ains_expense_capture
-                WHERE custrecord_ains_processing_status = '${CONSTANTS.STATUS.PENDING}'
-                AND isinactive = 'F'
-            `;
-
-            const pendingResult = query.runSuiteQL({
-                query: pendingQuery
-            });
-
-            const pendingCount = parseInt(pendingResult.results[0].values[0]);
-
-            if (pendingCount > 0) {
-                // Schedule another run in 5 minutes
-                const mrTask = task.create({
-                    taskType: task.TaskType.MAP_REDUCE,
-                    scriptId: runtime.getCurrentScript().id,
-                    deploymentId: runtime.getCurrentScript().deploymentId
-                });
-
-                // Note: In a real implementation, you might want to use a scheduled script
-                // to periodically check for pending records instead of chaining Map/Reduce jobs
-
-                commonLib.logOperation('next_run_scheduled', {
-                    pendingCount: pendingCount,
-                    taskId: mrTask.id
+            // Log any errors that occurred
+            if (context.errors && context.errors.length > 0) {
+                context.errors.forEach(function(error) {
+                    commonLib.logOperation('mr_error_detail', {
+                        trackingId: trackingId,
+                        error: error
+                    }, 'error');
                 });
             }
 
         } catch (error) {
-            commonLib.logOperation('schedule_next_run_error', {
+            commonLib.logOperation('mr_summarize_error', {
                 error: error.message
             }, 'error');
-        }
-    }
-
-    /**
-     * Validate Map/Reduce execution environment
-     * @returns {boolean} Whether environment is valid
-     */
-    function validateEnvironment() {
-        try {
-            // Check if required libraries are available
-            if (!ociLib || !llmLib) {
-                throw new Error('Required libraries not available');
-            }
-
-            // Check if expense categories are available
-            const categories = commonLib.getExpenseCategories();
-            if (!categories || categories.length === 0) {
-                throw new Error('No expense categories available');
-            }
-
-            // Check LLM usage limits
-            const usageStats = llmLib.getLLMUsageStats();
-            if (usageStats.remainingTextGeneration === 0) {
-                throw new Error('LLM usage limit exceeded');
-            }
-
-            return true;
-
-        } catch (error) {
-            commonLib.logOperation('environment_validation_error', {
-                error: error.message
-            }, 'error');
-
-            return false;
         }
     }
 
