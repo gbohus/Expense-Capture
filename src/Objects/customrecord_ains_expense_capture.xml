@@ -1,5 +1,5 @@
 <customrecordtype scriptid="customrecord_ains_expense_capture">
-  <accesstype>NONENEEDED</accesstype>
+  <accesstype>CUSTRECORDENTRYPERM</accesstype>
   <allowattachments>T</allowattachments>
   <allowinlinedeleting>F</allowinlinedeleting>
   <allowinlinedetaching>T</allowinlinedetaching>
@@ -18,7 +18,9 @@
   <enableoptimisticlocking>F</enableoptimisticlocking>
   <enablesystemnotes>T</enablesystemnotes>
   <hierarchical>F</hierarchical>
+  <icon></icon>
   <iconbuiltin>T</iconbuiltin>
+  <iconindex></iconindex>
   <includeinsearchmenu>T</includeinsearchmenu>
   <includename>T</includename>
   <isinactive>F</isinactive>
@@ -30,7 +32,7 @@
   <recordname>AI NS Expense Capture</recordname>
   <showcreationdate>T</showcreationdate>
   <showcreationdateonlist>F</showcreationdateonlist>
-  <showid>F</showid>
+  <showid>T</showid>
   <showlastmodified>T</showlastmodified>
   <showlastmodifiedonlist>F</showlastmodifiedonlist>
   <shownotes>T</shownotes>
@@ -38,446 +40,6 @@
   <showownerallowchange>F</showownerallowchange>
   <showowneronlist>F</showowneronlist>
   <customrecordcustomfields>
-    <customrecordcustomfield scriptid="custrecord_ains_file_attachment">
-      <accesslevel>2</accesslevel>
-      <allowquickadd>F</allowquickadd>
-      <applyformatting>F</applyformatting>
-      <checkspelling>F</checkspelling>
-      <defaultchecked>F</defaultchecked>
-      <defaultselection></defaultselection>
-      <defaultvalue></defaultvalue>
-      <description></description>
-      <displayheight></displayheight>
-      <displaytype>NORMAL</displaytype>
-      <displaywidth></displaywidth>
-      <dynamicdefault></dynamicdefault>
-      <enabletextenhance>F</enabletextenhance>
-      <encryptatrest>F</encryptatrest>
-      <fieldtype>DOCUMENT</fieldtype>
-      <globalsearch>F</globalsearch>
-      <help>The uploaded receipt file processed by OCR</help>
-      <isformula>F</isformula>
-      <ismandatory>T</ismandatory>
-      <isparent>F</isparent>
-      <label>Receipt File</label>
-      <linktext></linktext>
-      <maxlength></maxlength>
-      <maxvalue></maxvalue>
-      <minvalue></minvalue>
-      <onparentdelete></onparentdelete>
-      <parentsubtab></parentsubtab>
-      <rolerestrict>F</rolerestrict>
-      <searchcomparefield></searchcomparefield>
-      <searchdefault></searchdefault>
-      <searchlevel>2</searchlevel>
-      <selectrecordtype></selectrecordtype>
-      <showinlist>T</showinlist>
-      <sourcefilterby></sourcefilterby>
-      <sourcefrom></sourcefrom>
-      <sourcelist></sourcelist>
-      <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
-    </customrecordcustomfield>
-    <customrecordcustomfield scriptid="custrecord_ains_vendor_name">
-      <accesslevel>2</accesslevel>
-      <allowquickadd>F</allowquickadd>
-      <applyformatting>F</applyformatting>
-      <checkspelling>F</checkspelling>
-      <defaultchecked>F</defaultchecked>
-      <defaultselection></defaultselection>
-      <defaultvalue></defaultvalue>
-      <description></description>
-      <displayheight></displayheight>
-      <displaytype>NORMAL</displaytype>
-      <displaywidth></displaywidth>
-      <dynamicdefault></dynamicdefault>
-      <enabletextenhance>F</enabletextenhance>
-      <encryptatrest>F</encryptatrest>
-      <fieldtype>TEXT</fieldtype>
-      <globalsearch>F</globalsearch>
-      <help>Vendor name extracted from receipt by OCR/LLM</help>
-      <isformula>F</isformula>
-      <ismandatory>T</ismandatory>
-      <isparent>F</isparent>
-      <label>Vendor Name</label>
-      <linktext></linktext>
-      <maxlength>100</maxlength>
-      <maxvalue></maxvalue>
-      <minvalue></minvalue>
-      <onparentdelete></onparentdelete>
-      <parentsubtab></parentsubtab>
-      <rolerestrict>F</rolerestrict>
-      <searchcomparefield></searchcomparefield>
-      <searchdefault></searchdefault>
-      <searchlevel>2</searchlevel>
-      <selectrecordtype></selectrecordtype>
-      <showinlist>T</showinlist>
-      <sourcefilterby></sourcefilterby>
-      <sourcefrom></sourcefrom>
-      <sourcelist></sourcelist>
-      <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
-    </customrecordcustomfield>
-    <customrecordcustomfield scriptid="custrecord_ains_expense_amount">
-      <accesslevel>2</accesslevel>
-      <allowquickadd>F</allowquickadd>
-      <applyformatting>T</applyformatting>
-      <checkspelling>F</checkspelling>
-      <defaultchecked>F</defaultchecked>
-      <defaultselection></defaultselection>
-      <defaultvalue></defaultvalue>
-      <description></description>
-      <displayheight></displayheight>
-      <displaytype>NORMAL</displaytype>
-      <displaywidth></displaywidth>
-      <dynamicdefault></dynamicdefault>
-      <enabletextenhance>F</enabletextenhance>
-      <encryptatrest>F</encryptatrest>
-      <fieldtype>CURRENCY</fieldtype>
-      <globalsearch>F</globalsearch>
-      <help>Total expense amount extracted from receipt</help>
-      <isformula>F</isformula>
-      <ismandatory>T</ismandatory>
-      <isparent>F</isparent>
-      <label>Expense Amount</label>
-      <linktext></linktext>
-      <maxlength></maxlength>
-      <maxvalue></maxvalue>
-      <minvalue></minvalue>
-      <onparentdelete></onparentdelete>
-      <parentsubtab></parentsubtab>
-      <rolerestrict>F</rolerestrict>
-      <searchcomparefield></searchcomparefield>
-      <searchdefault></searchdefault>
-      <searchlevel>2</searchlevel>
-      <selectrecordtype></selectrecordtype>
-      <showinlist>T</showinlist>
-      <sourcefilterby></sourcefilterby>
-      <sourcefrom></sourcefrom>
-      <sourcelist></sourcelist>
-      <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
-    </customrecordcustomfield>
-    <customrecordcustomfield scriptid="custrecord_ains_expense_date">
-      <accesslevel>2</accesslevel>
-      <allowquickadd>F</allowquickadd>
-      <applyformatting>F</applyformatting>
-      <checkspelling>F</checkspelling>
-      <defaultchecked>F</defaultchecked>
-      <defaultselection></defaultselection>
-      <defaultvalue></defaultvalue>
-      <description></description>
-      <displayheight></displayheight>
-      <displaytype>NORMAL</displaytype>
-      <displaywidth></displaywidth>
-      <dynamicdefault></dynamicdefault>
-      <enabletextenhance>F</enabletextenhance>
-      <encryptatrest>F</encryptatrest>
-      <fieldtype>DATE</fieldtype>
-      <globalsearch>F</globalsearch>
-      <help>Date of expense transaction from receipt</help>
-      <isformula>F</isformula>
-      <ismandatory>T</ismandatory>
-      <isparent>F</isparent>
-      <label>Expense Date</label>
-      <linktext></linktext>
-      <maxlength></maxlength>
-      <maxvalue></maxvalue>
-      <minvalue></minvalue>
-      <onparentdelete></onparentdelete>
-      <parentsubtab></parentsubtab>
-      <rolerestrict>F</rolerestrict>
-      <searchcomparefield></searchcomparefield>
-      <searchdefault></searchdefault>
-      <searchlevel>2</searchlevel>
-      <selectrecordtype></selectrecordtype>
-      <showinlist>T</showinlist>
-      <sourcefilterby></sourcefilterby>
-      <sourcefrom></sourcefrom>
-      <sourcelist></sourcelist>
-      <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
-    </customrecordcustomfield>
-    <customrecordcustomfield scriptid="custrecord_ains_expense_category">
-      <accesslevel>2</accesslevel>
-      <allowquickadd>F</allowquickadd>
-      <applyformatting>F</applyformatting>
-      <checkspelling>F</checkspelling>
-      <defaultchecked>F</defaultchecked>
-      <defaultselection></defaultselection>
-      <defaultvalue></defaultvalue>
-      <description></description>
-      <displayheight></displayheight>
-      <displaytype>NORMAL</displaytype>
-      <displaywidth></displaywidth>
-      <dynamicdefault></dynamicdefault>
-      <enabletextenhance>F</enabletextenhance>
-      <encryptatrest>F</encryptatrest>
-      <fieldtype>SELECT</fieldtype>
-      <globalsearch>F</globalsearch>
-      <help>Auto-assigned expense category based on LLM analysis</help>
-      <isformula>F</isformula>
-      <ismandatory>T</ismandatory>
-      <isparent>F</isparent>
-      <label>Expense Category</label>
-      <linktext></linktext>
-      <maxlength></maxlength>
-      <maxvalue></maxvalue>
-      <minvalue></minvalue>
-      <onparentdelete></onparentdelete>
-      <parentsubtab></parentsubtab>
-      <rolerestrict>F</rolerestrict>
-      <searchcomparefield></searchcomparefield>
-      <searchdefault></searchdefault>
-      <searchlevel>2</searchlevel>
-      <selectrecordtype>-30</selectrecordtype>
-      <showinlist>T</showinlist>
-      <sourcefilterby></sourcefilterby>
-      <sourcefrom></sourcefrom>
-      <sourcelist></sourcelist>
-      <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
-    </customrecordcustomfield>
-    <customrecordcustomfield scriptid="custrecord_ains_description">
-      <accesslevel>2</accesslevel>
-      <allowquickadd>F</allowquickadd>
-      <applyformatting>F</applyformatting>
-      <checkspelling>T</checkspelling>
-      <defaultchecked>F</defaultchecked>
-      <defaultselection></defaultselection>
-      <defaultvalue></defaultvalue>
-      <description></description>
-      <displayheight></displayheight>
-      <displaytype>NORMAL</displaytype>
-      <displaywidth></displaywidth>
-      <dynamicdefault></dynamicdefault>
-      <enabletextenhance>F</enabletextenhance>
-      <encryptatrest>F</encryptatrest>
-      <fieldtype>TEXTAREA</fieldtype>
-      <globalsearch>F</globalsearch>
-      <help>Expense description extracted or generated from receipt</help>
-      <isformula>F</isformula>
-      <ismandatory>F</ismandatory>
-      <isparent>F</isparent>
-      <label>Description</label>
-      <linktext></linktext>
-      <maxlength>500</maxlength>
-      <maxvalue></maxvalue>
-      <minvalue></minvalue>
-      <onparentdelete></onparentdelete>
-      <parentsubtab></parentsubtab>
-      <rolerestrict>F</rolerestrict>
-      <searchcomparefield></searchcomparefield>
-      <searchdefault></searchdefault>
-      <searchlevel>2</searchlevel>
-      <selectrecordtype></selectrecordtype>
-      <showinlist>T</showinlist>
-      <sourcefilterby></sourcefilterby>
-      <sourcefrom></sourcefrom>
-      <sourcelist></sourcelist>
-      <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
-    </customrecordcustomfield>
-    <customrecordcustomfield scriptid="custrecord_ains_processing_status">
-      <accesslevel>2</accesslevel>
-      <allowquickadd>F</allowquickadd>
-      <applyformatting>F</applyformatting>
-      <checkspelling>F</checkspelling>
-      <defaultchecked>F</defaultchecked>
-      <defaultselection></defaultselection>
-      <defaultvalue></defaultvalue>
-      <description></description>
-      <displayheight></displayheight>
-      <displaytype>NORMAL</displaytype>
-      <displaywidth></displaywidth>
-      <dynamicdefault></dynamicdefault>
-      <enabletextenhance>F</enabletextenhance>
-      <encryptatrest>F</encryptatrest>
-      <fieldtype>SELECT</fieldtype>
-      <globalsearch>F</globalsearch>
-      <help>Current status of receipt processing</help>
-      <isformula>F</isformula>
-      <ismandatory>T</ismandatory>
-      <isparent>F</isparent>
-      <label>Processing Status</label>
-      <linktext></linktext>
-      <maxlength></maxlength>
-      <maxvalue></maxvalue>
-      <minvalue></minvalue>
-      <onparentdelete></onparentdelete>
-      <parentsubtab></parentsubtab>
-      <rolerestrict>F</rolerestrict>
-      <searchcomparefield></searchcomparefield>
-      <searchdefault></searchdefault>
-      <searchlevel>2</searchlevel>
-      <selectrecordtype>[scriptid=customlist_ains_processing_status]</selectrecordtype>
-      <showinlist>T</showinlist>
-      <sourcefilterby></sourcefilterby>
-      <sourcefrom></sourcefrom>
-      <sourcelist></sourcelist>
-      <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
-    </customrecordcustomfield>
-    <customrecordcustomfield scriptid="custrecord_ains_confidence_score">
-      <accesslevel>2</accesslevel>
-      <allowquickadd>F</allowquickadd>
-      <applyformatting>F</applyformatting>
-      <checkspelling>F</checkspelling>
-      <defaultchecked>F</defaultchecked>
-      <defaultselection></defaultselection>
-      <defaultvalue></defaultvalue>
-      <description></description>
-      <displayheight></displayheight>
-      <displaytype>NORMAL</displaytype>
-      <displaywidth></displaywidth>
-      <dynamicdefault></dynamicdefault>
-      <enabletextenhance>F</enabletextenhance>
-      <encryptatrest>F</encryptatrest>
-      <fieldtype>FLOAT</fieldtype>
-      <globalsearch>F</globalsearch>
-      <help>Confidence score for the AI processing (0.0 - 1.0)</help>
-      <isformula>F</isformula>
-      <ismandatory>F</ismandatory>
-      <isparent>F</isparent>
-      <label>Confidence Score</label>
-      <linktext></linktext>
-      <maxlength></maxlength>
-      <maxvalue></maxvalue>
-      <minvalue></minvalue>
-      <onparentdelete></onparentdelete>
-      <parentsubtab></parentsubtab>
-      <rolerestrict>F</rolerestrict>
-      <searchcomparefield></searchcomparefield>
-      <searchdefault></searchdefault>
-      <searchlevel>2</searchlevel>
-      <selectrecordtype></selectrecordtype>
-      <showinlist>T</showinlist>
-      <sourcefilterby></sourcefilterby>
-      <sourcefrom></sourcefrom>
-      <sourcelist></sourcelist>
-      <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
-    </customrecordcustomfield>
-    <customrecordcustomfield scriptid="custrecord_ains_created_by">
-      <accesslevel>2</accesslevel>
-      <allowquickadd>F</allowquickadd>
-      <applyformatting>F</applyformatting>
-      <checkspelling>F</checkspelling>
-      <defaultchecked>F</defaultchecked>
-      <defaultselection></defaultselection>
-      <defaultvalue></defaultvalue>
-      <description></description>
-      <displayheight></displayheight>
-      <displaytype>NORMAL</displaytype>
-      <displaywidth></displaywidth>
-      <dynamicdefault></dynamicdefault>
-      <enabletextenhance>F</enabletextenhance>
-      <encryptatrest>F</encryptatrest>
-      <fieldtype>SELECT</fieldtype>
-      <globalsearch>F</globalsearch>
-      <help>Employee who uploaded the receipt</help>
-      <isformula>F</isformula>
-      <ismandatory>T</ismandatory>
-      <isparent>F</isparent>
-      <label>Created By</label>
-      <linktext></linktext>
-      <maxlength></maxlength>
-      <maxvalue></maxvalue>
-      <minvalue></minvalue>
-      <onparentdelete></onparentdelete>
-      <parentsubtab></parentsubtab>
-      <rolerestrict>F</rolerestrict>
-      <searchcomparefield></searchcomparefield>
-      <searchdefault></searchdefault>
-      <searchlevel>2</searchlevel>
-      <selectrecordtype>-4</selectrecordtype>
-      <showinlist>T</showinlist>
-      <sourcefilterby></sourcefilterby>
-      <sourcefrom></sourcefrom>
-      <sourcelist></sourcelist>
-      <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_integration]</subtab>
-    </customrecordcustomfield>
-    <customrecordcustomfield scriptid="custrecord_ains_imported_to_er">
-      <accesslevel>2</accesslevel>
-      <allowquickadd>F</allowquickadd>
-      <applyformatting>F</applyformatting>
-      <checkspelling>F</checkspelling>
-      <defaultchecked>F</defaultchecked>
-      <defaultselection></defaultselection>
-      <defaultvalue></defaultvalue>
-      <description></description>
-      <displayheight></displayheight>
-      <displaytype>NORMAL</displaytype>
-      <displaywidth></displaywidth>
-      <dynamicdefault></dynamicdefault>
-      <enabletextenhance>F</enabletextenhance>
-      <encryptatrest>F</encryptatrest>
-      <fieldtype>CHECKBOX</fieldtype>
-      <globalsearch>F</globalsearch>
-      <help>Indicates if this expense has been imported to an expense report</help>
-      <isformula>F</isformula>
-      <ismandatory>F</ismandatory>
-      <isparent>F</isparent>
-      <label>Imported to Expense Report</label>
-      <linktext></linktext>
-      <maxlength></maxlength>
-      <maxvalue></maxvalue>
-      <minvalue></minvalue>
-      <onparentdelete></onparentdelete>
-      <parentsubtab></parentsubtab>
-      <rolerestrict>F</rolerestrict>
-      <searchcomparefield></searchcomparefield>
-      <searchdefault></searchdefault>
-      <searchlevel>2</searchlevel>
-      <selectrecordtype></selectrecordtype>
-      <showinlist>T</showinlist>
-      <sourcefilterby></sourcefilterby>
-      <sourcefrom></sourcefrom>
-      <sourcelist></sourcelist>
-      <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_integration]</subtab>
-    </customrecordcustomfield>
-    <customrecordcustomfield scriptid="custrecord_ains_expense_report_id">
-      <accesslevel>2</accesslevel>
-      <allowquickadd>F</allowquickadd>
-      <applyformatting>F</applyformatting>
-      <checkspelling>F</checkspelling>
-      <defaultchecked>F</defaultchecked>
-      <defaultselection></defaultselection>
-      <defaultvalue></defaultvalue>
-      <description></description>
-      <displayheight></displayheight>
-      <displaytype>NORMAL</displaytype>
-      <displaywidth></displaywidth>
-      <dynamicdefault></dynamicdefault>
-      <enabletextenhance>F</enabletextenhance>
-      <encryptatrest>F</encryptatrest>
-      <fieldtype>TEXT</fieldtype>
-      <globalsearch>F</globalsearch>
-      <help>Reference to the expense report this was imported to</help>
-      <isformula>F</isformula>
-      <ismandatory>F</ismandatory>
-      <isparent>F</isparent>
-      <label>Expense Report ID</label>
-      <linktext></linktext>
-      <maxlength>50</maxlength>
-      <maxvalue></maxvalue>
-      <minvalue></minvalue>
-      <onparentdelete></onparentdelete>
-      <parentsubtab></parentsubtab>
-      <rolerestrict>F</rolerestrict>
-      <searchcomparefield></searchcomparefield>
-      <searchdefault></searchdefault>
-      <searchlevel>2</searchlevel>
-      <selectrecordtype></selectrecordtype>
-      <showinlist>T</showinlist>
-      <sourcefilterby></sourcefilterby>
-      <sourcefrom></sourcefrom>
-      <sourcelist></sourcelist>
-      <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_integration]</subtab>
-    </customrecordcustomfield>
     <customrecordcustomfield scriptid="custrecord_ains_processed_date">
       <accesslevel>2</accesslevel>
       <allowquickadd>F</allowquickadd>
@@ -718,18 +280,460 @@
       <storevalue>T</storevalue>
       <subtab>[scriptid=customrecord_ains_expense_capture.tab_technical]</subtab>
     </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_ains_created_by">
+      <accesslevel>2</accesslevel>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description></description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>SELECT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help>Employee who uploaded the receipt</help>
+      <isformula>F</isformula>
+      <ismandatory>T</ismandatory>
+      <isparent>F</isparent>
+      <label>Created By</label>
+      <linktext></linktext>
+      <maxlength></maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete>SET_NULL</onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype>-4</selectrecordtype>
+      <showinlist>T</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab>[scriptid=customrecord_ains_expense_capture.tab_integration]</subtab>
+    </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_ains_imported_to_er">
+      <accesslevel>2</accesslevel>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description></description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>CHECKBOX</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help>Indicates if this expense has been imported to an expense report</help>
+      <isformula>F</isformula>
+      <ismandatory>F</ismandatory>
+      <isparent>F</isparent>
+      <label>Imported to Expense Report</label>
+      <linktext></linktext>
+      <maxlength></maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete></onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype></selectrecordtype>
+      <showinlist>T</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab>[scriptid=customrecord_ains_expense_capture.tab_integration]</subtab>
+    </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_ains_expense_report_id">
+      <accesslevel>2</accesslevel>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description></description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>TEXT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help>Reference to the expense report this was imported to</help>
+      <isformula>F</isformula>
+      <ismandatory>F</ismandatory>
+      <isparent>F</isparent>
+      <label>Expense Report ID</label>
+      <linktext></linktext>
+      <maxlength>50</maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete></onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype></selectrecordtype>
+      <showinlist>T</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab>[scriptid=customrecord_ains_expense_capture.tab_integration]</subtab>
+    </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_ains_file_attachment">
+      <accesslevel>2</accesslevel>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description></description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>DOCUMENT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help>The uploaded receipt file processed by OCR</help>
+      <isformula>F</isformula>
+      <ismandatory>T</ismandatory>
+      <isparent>F</isparent>
+      <label>Receipt File</label>
+      <linktext></linktext>
+      <maxlength></maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete></onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype></selectrecordtype>
+      <showinlist>T</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
+    </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_ains_vendor_name">
+      <accesslevel>2</accesslevel>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description></description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>TEXT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help>Vendor name extracted from receipt by OCR/LLM</help>
+      <isformula>F</isformula>
+      <ismandatory>T</ismandatory>
+      <isparent>F</isparent>
+      <label>Vendor Name</label>
+      <linktext></linktext>
+      <maxlength>100</maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete></onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype></selectrecordtype>
+      <showinlist>T</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
+    </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_ains_expense_amount">
+      <accesslevel>2</accesslevel>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>T</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description></description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>CURRENCY</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help>Total expense amount extracted from receipt</help>
+      <isformula>F</isformula>
+      <ismandatory>T</ismandatory>
+      <isparent>F</isparent>
+      <label>Expense Amount</label>
+      <linktext></linktext>
+      <maxlength></maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete></onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype></selectrecordtype>
+      <showinlist>T</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
+    </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_ains_expense_date">
+      <accesslevel>2</accesslevel>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description></description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>DATE</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help>Date of expense transaction from receipt</help>
+      <isformula>F</isformula>
+      <ismandatory>T</ismandatory>
+      <isparent>F</isparent>
+      <label>Expense Date</label>
+      <linktext></linktext>
+      <maxlength></maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete></onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype></selectrecordtype>
+      <showinlist>T</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
+    </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_ains_expense_category">
+      <accesslevel>2</accesslevel>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description></description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>SELECT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help>Auto-assigned expense category based on LLM analysis</help>
+      <isformula>F</isformula>
+      <ismandatory>T</ismandatory>
+      <isparent>F</isparent>
+      <label>Expense Category</label>
+      <linktext></linktext>
+      <maxlength></maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete>NO_ACTION</onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype>-126</selectrecordtype>
+      <showinlist>T</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
+    </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_ains_description">
+      <accesslevel>2</accesslevel>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>T</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description></description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>TEXTAREA</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help>Expense description extracted or generated from receipt</help>
+      <isformula>F</isformula>
+      <ismandatory>F</ismandatory>
+      <isparent>F</isparent>
+      <label>Description</label>
+      <linktext></linktext>
+      <maxlength>500</maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete></onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype></selectrecordtype>
+      <showinlist>T</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
+    </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_ains_processing_status">
+      <accesslevel>2</accesslevel>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection>[scriptid=customlist_ains_processing_status.pending]</defaultselection>
+      <defaultvalue></defaultvalue>
+      <description></description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>SELECT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help>Current status of receipt processing</help>
+      <isformula>F</isformula>
+      <ismandatory>T</ismandatory>
+      <isparent>F</isparent>
+      <label>Processing Status</label>
+      <linktext></linktext>
+      <maxlength></maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete>NO_ACTION</onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype>[scriptid=customlist_ains_processing_status]</selectrecordtype>
+      <showinlist>T</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
+    </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_ains_confidence_score">
+      <accesslevel>2</accesslevel>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description></description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>FLOAT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help>Confidence score for the AI processing (0.0 - 1.0)</help>
+      <isformula>F</isformula>
+      <ismandatory>F</ismandatory>
+      <isparent>F</isparent>
+      <label>Confidence Score</label>
+      <linktext></linktext>
+      <maxlength></maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete></onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype></selectrecordtype>
+      <showinlist>T</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
+    </customrecordcustomfield>
   </customrecordcustomfields>
   <permissions>
     <permission>
-      <permittedrole>ADMINISTRATOR</permittedrole>
       <permittedlevel>FULL</permittedlevel>
+      <permittedrole>ADMINISTRATOR</permittedrole>
+      <restriction></restriction>
     </permission>
     <permission>
-      <permittedrole>EMPLOYEE_CENTER</permittedrole>
       <permittedlevel>CREATE</permittedlevel>
+      <permittedrole>EMPLOYEE_CENTER</permittedrole>
+      <restriction></restriction>
     </permission>
   </permissions>
-<subtabs>
+  <subtabs>
     <subtab scriptid="tab_technical">
       <tabparent></tabparent>
       <tabtitle>Technical</tabtitle>

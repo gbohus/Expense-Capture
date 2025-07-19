@@ -40,7 +40,7 @@ function(llm, log, search, commonLib) {
                 modelFamily: getLLMModelFamily(options.model),
                 modelParameters: {
                     maxTokens: 500,
-                    temperature: 0.1, 
+                    temperature: 0.1,
                     topK: 3,
                     topP: 0.7,
                     frequencyPenalty: 0.2,
@@ -108,9 +108,11 @@ function(llm, log, search, commonLib) {
      * @returns {string} Formatted prompt for LLM
      */
     function buildExpenseProcessingPrompt(ocrData, expenseCategories) {
-        const categoryList = expenseCategories.map(cat => `${cat.id}: ${cat.name}`).join('\n');
+        const categoryList = expenseCategories.map(cat =>
+            `${cat.id}: ${cat.name}${cat.description ? ` (${cat.description})` : ''}`
+        ).join('\n');
 
-        const prompt = `You are a NetSuite expense processing assistant analyzing receipt data.
+        const prompt = `You are a NetSuite expense processing assistant with deep knowledge of business expense categorization. Analyze this receipt data intelligently.
 
 EXTRACTED OCR DATA:
 ${JSON.stringify(ocrData, null, 2)}
@@ -118,39 +120,57 @@ ${JSON.stringify(ocrData, null, 2)}
 AVAILABLE EXPENSE CATEGORIES:
 ${categoryList}
 
-TASK:
-Analyze the OCR data and extract/format expense information. You must be confident in your assignments and provide specific values - no blank fields allowed.
+INTELLIGENT ANALYSIS TASK:
+Process this receipt using business expense expertise to make the smartest possible categorization and data extraction.
 
-REQUIREMENTS:
-1. Extract vendor name (company/business name)
-2. Extract total expense amount (numbers only, no currency symbols)
-3. Extract expense date (YYYY-MM-DD format)
-4. Assign the most appropriate expense category ID from the list above
-5. Create a concise expense description
-6. Provide confidence score (0.0-1.0)
+EXTRACTION REQUIREMENTS:
+1. **Vendor Analysis**: Extract the business/merchant name (not payment processor names like "SQ *" or "PYMT")
+2. **Amount Intelligence**: Find the final total amount including tax/tips, ignore subtotals or line items
+3. **Date Precision**: Extract transaction date (not processing/posting dates)
+4. **Smart Categorization**: Match to the most specific and appropriate expense category based on:
+   - Business type/industry of vendor
+   - Common expense patterns (meals, travel, office supplies, etc.)
+   - Specific category descriptions provided
+5. **Descriptive Summary**: Create a clear 3-6 word expense description
+
+CATEGORY MATCHING INTELLIGENCE:
+- Restaurant/dining → Meals & Entertainment categories
+- Gas stations → Travel/Transportation
+- Hotels → Travel/Lodging
+- Office supply stores → Office Supplies
+- Airlines → Travel/Transportation
+- Uber/Lyft/taxi → Transportation/Local Travel
+- Software/subscriptions → Technology/Software
+- Phone bills → Communications/Phone
+- Internet → Communications/Internet
+- When uncertain, choose the most general applicable category
 
 RESPONSE FORMAT:
-Return ONLY a valid JSON object with this exact structure:
+Return ONLY this exact JSON structure:
 {
-    "vendor": "string - extracted vendor/merchant name",
-    "amount": number - total amount as decimal number,
-    "date": "string - date in YYYY-MM-DD format",
-    "categoryId": "string - exact category ID from the list above",
-    "description": "string - concise expense description",
-    "confidence": number - overall confidence score between 0.0 and 1.0
+    "vendor": "string - clean business name (no payment processors)",
+    "amount": number - final total as decimal number,
+    "date": "string - transaction date in YYYY-MM-DD format",
+    "categoryId": "string - exact category ID from list above",
+    "description": "string - clear expense description (3-6 words)",
+    "confidence": number - confidence score 0.0-1.0 based on data clarity,
+    "reasoning": "string - brief explanation of category choice"
 }
 
-RULES:
-- Use the highest confidence data from OCR results
-- If vendor unclear, use best available business name
-- Amount should be the total including tax/tips
-- Date should be transaction date, not processing date
-- Category must match exactly one of the provided IDs
-- Description should be 2-8 words describing the expense
-- Confidence should reflect overall data quality
-- NO blank or null values allowed - use best judgment for any unclear fields
+QUALITY STANDARDS:
+- High confidence (0.8+): Clear vendor, amount, date, obvious category match
+- Medium confidence (0.5-0.8): Most fields clear, category requires interpretation
+- Low confidence (0.3-0.5): Some fields unclear but reasonable assumptions possible
+- Never return confidence below 0.3 - always make best judgment
+- NO null or blank values - use best available data
 
-Respond with only the JSON object, no additional text.`;
+SMART DEFAULTS:
+- If no clear vendor: Use closest business identifier from OCR
+- If multiple amounts: Choose the largest/final total
+- If unclear category: Use most general applicable option
+- If no clear date: Use best available date information
+
+Analyze thoroughly and respond with only the JSON object.`;
 
         return prompt;
     }
@@ -476,9 +496,22 @@ Fix any obvious errors and return improved JSON with same structure.`;
         }
     }
 
+    /**
+     * Simplified wrapper for backward compatibility
+     * @param {Object} expenseData - Extracted expense data from OCR
+     * @param {Array} expenseCategories - Optional expense categories (legacy parameter, will be fetched internally)
+     * @returns {Object} Processing results
+     */
+    function processWithLLM(expenseData, expenseCategories) {
+        // Call the main function with simplified parameters
+        const options = expenseCategories ? { expenseCategories: expenseCategories } : {};
+        return processExpenseDataWithLLM(expenseData, options);
+    }
+
     // Public interface
     return {
         processExpenseDataWithLLM: processExpenseDataWithLLM,
+        processWithLLM: processWithLLM, // Backward compatibility alias
         parseExpenseDataFromLLMResponse: parseExpenseDataFromLLMResponse,
         buildExpenseProcessingPrompt: buildExpenseProcessingPrompt,
         createSpecializedPrompt: createSpecializedPrompt,

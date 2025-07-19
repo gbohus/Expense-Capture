@@ -46,19 +46,6 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
         let uploadedFileId = context.request.parameters.uploaded_file_id;
         let uploadedFileName = context.request.parameters.uploaded_file_name;
 
-        // Check if we need to find a recently uploaded file
-        const findRecentUpload = context.request.parameters.find_recent_upload;
-        if (findRecentUpload === 'true' && !uploadedFileId) {
-            const recentFile = findRecentlyUploadedFile(currentUser.id);
-            if (recentFile) {
-                uploadedFileId = recentFile.id;
-                uploadedFileName = recentFile.name;
-            } else {
-                // If we can't find the recent file, show an error message
-                return showRecentFileNotFoundPage(context);
-            }
-        }
-
         commonLib.logOperation('render_upload_form', {
             userId: currentUser.id,
             isEmployeeCenter: isEmployeeCenter,
@@ -137,36 +124,49 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
         context.response.writePage(form);
     }
 
-        /**
+    /**
      * Render upload interface (Step 1)
      * @param {Form} form - Form object
      * @param {Object} currentUser - Current user details
      */
     function renderUploadInterface(form, currentUser) {
-        // Native NetSuite Upload Button
-        const uploadButtonField = form.addField({
-            id: 'native_upload_section',
-            type: ui.FieldType.INLINEHTML,
-            label: 'Upload Receipt'
+        // Native NetSuite File Upload Field
+        const fileField = form.addField({
+            id: 'receipt_file',
+            type: ui.FieldType.FILE,
+            label: 'Receipt File'
         });
 
-        // Build the NetSuite native upload URL with current user context
-        const nativeUploadUrl = `https://td3011969.app.netsuite.com/app/common/media/expensereportmediaitem.nl?target=expense:expmediaitem&label=Attach+File&reportOwner=${currentUser.id}&entity=${currentUser.id}`;
+        fileField.isMandatory = true;
 
-        uploadButtonField.defaultValue = `
-            <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 5px; margin: 15px 0;">
-                <h3 style="color: #1f4e79; margin-bottom: 15px;">📎 Upload Your Receipt</h3>
-                <p style="margin-bottom: 20px;">Click the button below to open NetSuite's native file upload window</p>
-                <button type="button"
-                        onclick="openNativeUpload('${nativeUploadUrl}')"
-                        style="background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 5px; font-size: 16px; cursor: pointer;">
-                    📁 Upload Receipt File
-                </button>
-                <p style="margin-top: 10px; font-size: 12px; color: #666;">
-                    Supported formats: PDF, JPG, PNG, GIF | Max size: ${commonLib.getScriptParameter(CONSTANTS.SCRIPT_PARAMS.MAX_FILE_SIZE, CONSTANTS.DEFAULT_VALUES.MAX_FILE_SIZE_MB)}MB
+        // File upload instructions
+        const uploadSection = form.addField({
+            id: 'upload_section',
+            type: ui.FieldType.INLINEHTML,
+            label: 'Upload Your Receipt'
+        });
+
+        const maxSize = commonLib.getScriptParameter(CONSTANTS.SCRIPT_PARAMS.MAX_FILE_SIZE, CONSTANTS.DEFAULT_VALUES.MAX_FILE_SIZE_MB);
+
+        uploadSection.defaultValue = `
+            <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 20px; margin: 15px 0;">
+                <h3 style="color: #1f4e79; margin-top: 0;">📎 Upload Your Receipt</h3>
+                <p style="margin-bottom: 15px;">Select your receipt file using the field above, then click "Upload & Process" to extract expense data with AI.</p>
+                <div style="background: #e9ecef; border-radius: 3px; padding: 10px; margin: 10px 0;">
+                    <strong>📋 Supported Formats:</strong> ${CONSTANTS.SUPPORTED_FILE_TYPES.join(', ').toUpperCase()}<br>
+                    <strong>📏 Maximum Size:</strong> ${maxSize}MB<br>
+                    <strong>🤖 AI Processing:</strong> Automatically extracts vendor, amount, date, and category
+                </div>
+                <p style="font-size: 12px; color: #6c757d; margin-bottom: 0;">
+                    💡 <strong>Tip:</strong> Clear, well-lit images work best for accurate data extraction
                 </p>
             </div>
         `;
+
+        // Submit button
+        form.addSubmitButton({
+            label: 'Upload & Process Receipt'
+        });
     }
 
     /**
@@ -186,7 +186,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
 
         confirmationField.defaultValue = `
             <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin: 15px 0;">
-                <h4>✓ File Uploaded Successfully!</h4>
+                <h4>✅ File Uploaded Successfully!</h4>
                 <p><strong>File:</strong> ${uploadedFileName}</p>
                 <p><strong>File ID:</strong> ${uploadedFileId}</p>
                 <p>Click "Process Receipt" below to extract expense data using AI.</p>
@@ -218,7 +218,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
         // Upload different file button
         form.addButton({
             id: 'btn_upload_different',
-            label: 'Upload Different File',
+            label: '📁 Upload Different File',
             functionName: 'uploadDifferentFile'
         });
     }
@@ -269,7 +269,8 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
         commonLib.logOperation('handle_file_upload_start', {
             trackingId: trackingId,
             userId: parameters.user_id,
-            hasFile: !!uploadedFile
+            hasFile: !!uploadedFile,
+            fileName: uploadedFile ? uploadedFile.name : null
         });
 
         // Validate file upload
@@ -283,7 +284,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
             throw new Error(validation.message);
         }
 
-        // Save file using Enhanced File Security
+        // Save file using Enhanced File Security pattern
         const savedFile = saveFileWithEnhancedSecurity(uploadedFile, parameters.user_id);
 
         commonLib.logOperation('file_upload_success', {
@@ -377,10 +378,10 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
     }
 
     /**
-     * Redirect to processing step with file information
+     * Redirect to processing step after successful upload
      * @param {Object} context - Request context
-     * @param {string} fileId - ID of uploaded file
-     * @param {string} fileName - Name of uploaded file
+     * @param {string} fileId - Uploaded file ID
+     * @param {string} fileName - Uploaded file name
      */
     function redirectToProcessingStep(context, fileId, fileName) {
         const currentUrl = url.resolveScript({
@@ -392,9 +393,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
             }
         });
 
-        redirect.redirect({
-            url: currentUrl
-        });
+        redirect.redirect({ url: currentUrl });
     }
 
     /**
@@ -404,7 +403,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
      */
     function showProcessingStartedPage(context, details) {
         const form = ui.createForm({
-            title: 'Processing Started'
+            title: 'AI Processing Started'
         });
 
         const statusField = form.addField({
@@ -486,7 +485,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
     }
 
     /**
-     * Save file using Enhanced File Security
+     * Save file using Enhanced File Security pattern
      * @param {File} uploadedFile - File to save
      * @param {string} userId - User ID for folder creation
      * @returns {File} Saved file object
@@ -525,12 +524,13 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
             });
 
             // Create file record with Enhanced File Security pattern
+            // The folder ID will automatically be managed by Enhanced File Security
             const fileRecord = file.create({
                 name: `AINS_${Date.now()}_${uploadedFile.name}`,
                 fileType: fileType,
                 contents: uploadedFile.getContents(),
                 description: `AI NS Expense Receipt - ${new Date().toLocaleDateString()}`,
-                folder: getExpenseFolderId(userId), // This leverages Enhanced File Security
+                folder: getExpenseFolderId(userId),
                 isOnline: true
             });
 
@@ -623,7 +623,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
     }
 
     /**
-     * Show page when recent file cannot be found
+     * Show recent file not found page
      * @param {Object} context - Request context
      */
     function showRecentFileNotFoundPage(context) {
@@ -631,32 +631,32 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
             title: 'File Not Found'
         });
 
-        const messageField = form.addField({
-            id: 'not_found_message',
+        const errorField = form.addField({
+            id: 'error_message',
             type: ui.FieldType.INLINEHTML,
-            label: 'Status'
+            label: 'Error'
         });
 
-        messageField.defaultValue = `
-            <div style="background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 15px; border-radius: 5px; margin: 10px 0;">
+        errorField.defaultValue = `
+            <div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; border-radius: 5px; margin: 10px 0;">
                 <h3 style="margin-top: 0;">⚠️ File Not Found</h3>
-                <p>We couldn't locate your recently uploaded file. This can happen if:</p>
+                <p>Unable to locate the recently uploaded file. This may be due to:</p>
                 <ul>
-                    <li>The file upload didn't complete successfully</li>
-                    <li>The file was uploaded to a different location</li>
-                    <li>There was a delay in file processing</li>
+                    <li>File upload was not completed successfully</li>
+                    <li>File is still being processed by NetSuite</li>
+                    <li>File was uploaded to a different location</li>
                 </ul>
-                <p>Please try uploading your file again using the button below.</p>
+                <p>Please try uploading your receipt again.</p>
             </div>
         `;
 
         form.addButton({
             id: 'btn_try_again',
-            label: 'Upload Again',
+            label: 'Try Again',
             functionName: 'uploadAnother'
         });
 
-        // Add client script for button actions
+        // Add client script
         form.clientScriptModulePath = '../ClientScripts/AINS_CS_ReceiptUpload.js';
 
         context.response.writePage(form);
@@ -680,26 +680,26 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
 
         errorField.defaultValue = `
             <div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; border-radius: 5px; margin: 10px 0;">
-                <h3 style="margin-top: 0;">❌ Upload Failed</h3>
-                <p><strong>Error:</strong> ${commonLib.formatErrorMessage(error)}</p>
-                <p>Please check your file and try again. If the problem persists, contact your administrator.</p>
+                <h3 style="margin-top: 0;">❌ Upload Error</h3>
+                <p><strong>Error:</strong> ${error.message}</p>
+                <p>Please check your file and try again. If the problem persists, contact your system administrator.</p>
             </div>
         `;
 
         form.addButton({
             id: 'btn_try_again',
             label: 'Try Again',
-            functionName: 'tryAgain'
+            functionName: 'uploadAnother'
         });
 
-        // Add client script for button actions
-        form.clientScriptModulePath = '../ClientScripts/AINS_CS_ReceiptUploadError.js';
+        // Add client script
+        form.clientScriptModulePath = '../ClientScripts/AINS_CS_ReceiptUpload.js';
 
         context.response.writePage(form);
     }
 
     /**
-     * Add CSS styling to form
+     * Add form styling
      * @param {Form} form - Form object
      */
     function addFormStyling(form) {
@@ -714,7 +714,6 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
                 .uir-form-title { color: #1f4e79; font-size: 24px; }
                 .uir-field-wrapper { margin: 10px 0; }
                 .uir-form-group-title { background: #f8f9fa; padding: 10px; border-radius: 3px; }
-                .upload-progress { display: none; }
                 .file-upload-area {
                     border: 2px dashed #ccc;
                     padding: 20px;
@@ -756,12 +755,12 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
         `;
     }
 
-                /**
+    /**
      * Find the most recently uploaded file by the current user
      * @param {string} userId - Current user ID
      * @returns {Object|null} File object with id and name, or null if not found
      */
-            function findRecentlyUploadedFile(userId) {
+    function findRecentlyUploadedFile(userId) {
         try {
             // Add a small delay to allow file to be fully committed to database
             // This is a synchronous delay in the server-side script
@@ -855,7 +854,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
                 };
             }
 
-                        commonLib.logOperation('no_recent_file_found', {
+            commonLib.logOperation('no_recent_file_found', {
                 userId: userId,
                 searchTime: tenMinutesAgo.toISOString()
             });

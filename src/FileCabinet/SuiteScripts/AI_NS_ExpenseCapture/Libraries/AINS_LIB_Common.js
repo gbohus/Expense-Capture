@@ -34,10 +34,10 @@ function(runtime, log, url, query) {
         },
 
         STATUS: {
-            PENDING: 'pending',
-            PROCESSING: 'processing',
-            COMPLETE: 'complete',
-            ERROR: 'error'
+            PENDING: 1,
+            PROCESSING: 2,
+            COMPLETE: 3,
+            ERROR: 4
         },
 
         SCRIPT_IDS: {

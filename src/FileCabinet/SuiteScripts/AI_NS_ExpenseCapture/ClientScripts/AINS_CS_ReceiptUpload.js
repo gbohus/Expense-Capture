@@ -5,8 +5,8 @@
  * @description Client script for Receipt Upload functionality
  */
 
-define(['N/currentRecord', 'N/ui/dialog', 'N/url', 'N/https'],
-function(currentRecord, dialog, url, https) {
+define(['N/currentRecord', 'N/ui/dialog', 'N/url'],
+function(currentRecord, dialog, url) {
 
     /**
      * Page initialization function
@@ -14,220 +14,299 @@ function(currentRecord, dialog, url, https) {
      */
     function pageInit(scriptContext) {
         try {
-            console.log('AI NS Receipt Upload form initialized - native upload method');
+            console.log('AI NS Receipt Upload form initialized');
 
             // Add global functions for the interface
-            window.openNativeUpload = openNativeUpload;
-            window.returnToDashboard = returnToDashboard;
             window.uploadDifferentFile = uploadDifferentFile;
             window.uploadAnother = uploadAnother;
+            window.returnToDashboard = returnToDashboard;
 
-        } catch (error) {
-            console.error('Error initializing receipt upload form:', error);
-        }
-    }
-
-    /**
-     * Open NetSuite's native expense media upload window
-     * @param {string} uploadUrl - The native NetSuite upload URL
-     */
-    function openNativeUpload(uploadUrl) {
-        try {
-            console.log('Opening native NetSuite upload window:', uploadUrl);
-
-            // Open NetSuite's native upload window in a popup
-            const popup = window.open(
-                uploadUrl,
-                'ExpenseMediaUpload',
-                'width=800,height=600,scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=no,status=no'
-            );
-
-            // Monitor the popup for completion
-            const checkClosed = setInterval(function() {
-                if (popup.closed) {
-                    clearInterval(checkClosed);
-                    handleUploadComplete();
-                }
-            }, 1000);
-
-        } catch (error) {
-            console.error('Error opening native upload window:', error);
-            dialog.alert({
-                title: 'Upload Error',
-                message: 'Unable to open upload window. Please try again.'
-            });
-        }
-    }
-
-    /**
-     * Handle upload completion from native window
-     */
-    function handleUploadComplete() {
-        try {
-            console.log('Native upload window closed - checking for completion');
-
-            // Show success message and redirect to processing step
-            dialog.alert({
-                title: 'Upload Complete',
-                message: 'File uploaded successfully! Click OK to proceed to processing.'
-            }).then(function() {
-                // Preserve the script and deployment IDs in the redirect URL
-                const currentUrl = window.location.href;
-                const urlParts = currentUrl.split('?');
-                const baseUrl = urlParts[0];
-                const existingParams = urlParts[1] || '';
-
-                // Parse existing parameters
-                const params = new URLSearchParams(existingParams);
-
-                // Add the find_recent_upload parameter
-                params.set('find_recent_upload', 'true');
-
-                // Remove any existing file parameters to start fresh
-                params.delete('uploaded_file_id');
-                params.delete('uploaded_file_name');
-
-                // Construct the new URL with all parameters
-                const processingUrl = baseUrl + '?' + params.toString();
-                window.location.href = processingUrl;
-            });
-
-        } catch (error) {
-            console.error('Error handling upload completion:', error);
-        }
-    }
-
-    /**
-     * Save record validation function
-     * @param {Object} context - Script context
-     * @returns {boolean} - True if validation passes
-     */
-    function saveRecord(context) {
-        try {
-            const record = context.currentRecord;
-
-            // Check if this is Step 1 (upload) or Step 2 (processing)
-            const uploadedFileId = record.getValue('uploaded_file_id');
-
-            if (!uploadedFileId) {
-                // Step 1: Validate file upload
-                return validateFileUpload(record);
-            } else {
-                // Step 2: Validate processing trigger
-                return validateProcessingTrigger(record);
+            // Add file validation to the file field if it exists
+            const record = scriptContext.currentRecord;
+            const fileField = document.getElementById('receipt_file_fs');
+            if (fileField) {
+                fileField.addEventListener('change', function(e) {
+                    validateFileSelection(e.target);
+                });
             }
 
         } catch (error) {
-            console.error('Form validation error:', error);
+            console.error('AI NS Receipt Upload initialization error:', error);
+        }
+    }
+
+    /**
+     * Form submission validation
+     * @param {Object} scriptContext - Client script context
+     * @returns {boolean} True if validation passes
+     */
+    function saveRecord(scriptContext) {
+        try {
+            const record = scriptContext.currentRecord;
+
+            // Check if we have an uploaded file (for step 1) or are processing (for step 2)
+            const uploadedFileId = record.getValue('uploaded_file_id');
+            const receiptFile = record.getValue('receipt_file');
+
+            // Step 1: File upload validation
+            if (!uploadedFileId && !receiptFile) {
+                dialog.alert({
+                    title: 'File Required',
+                    message: 'Please select a receipt file to upload.'
+                });
+                return false;
+            }
+
+            // If we have a file, validate it
+            if (receiptFile) {
+                const fileValidation = validateUploadedFile(receiptFile);
+                if (!fileValidation.isValid) {
+                    dialog.alert({
+                        title: 'Invalid File',
+                        message: fileValidation.message
+                    });
+                    return false;
+                }
+            }
+
+            // Show processing message
+            if (receiptFile) {
+                showProcessingMessage('Uploading and processing your receipt...');
+            } else if (uploadedFileId) {
+                showProcessingMessage('Starting AI processing of your receipt...');
+            }
+
+            return true;
+
+        } catch (error) {
+            console.error('AI NS Receipt Upload save validation error:', error);
             dialog.alert({
                 title: 'Validation Error',
-                message: 'An error occurred during validation: ' + error.message
+                message: 'There was an error validating your upload. Please try again.'
             });
             return false;
         }
     }
 
     /**
-     * Validate file upload (Step 1) - Not used with native upload
-     * @param {Record} record - Current record
-     * @returns {boolean} - True if validation passes
+     * Validate file selection in real-time
+     * @param {HTMLInputElement} fileInput - File input element
      */
-    function validateFileUpload(record) {
-        // Native upload handles its own validation
-        return true;
-    }
+    function validateFileSelection(fileInput) {
+        try {
+            if (!fileInput.files || fileInput.files.length === 0) {
+                return;
+            }
 
-    /**
-     * Validate processing trigger (Step 2)
-     * @param {Record} record - Current record
-     * @returns {boolean} - True if validation passes
-     */
-    function validateProcessingTrigger(record) {
-        // Confirm processing with user
-        const fileName = record.getValue('uploaded_file_name');
+            const file = fileInput.files[0];
+            const validation = validateFileFromInput(file);
 
-        return dialog.confirm({
-            title: 'Start AI Processing',
-            message: `Ready to process "${fileName}" with AI?\n\nThis will extract expense data using Oracle OCI and NetSuite LLM.`
-        });
-    }
+            if (!validation.isValid) {
+                // Clear the file input
+                fileInput.value = '';
 
-    /**
-     * Upload a different file (return to upload step)
-     */
-    function uploadDifferentFile() {
-        // Redirect back to upload form without file parameters but preserve script/deployment IDs
-        const currentUrl = window.location.href;
-        const urlParts = currentUrl.split('?');
-        const baseUrl = urlParts[0];
-        const existingParams = urlParts[1] || '';
+                dialog.alert({
+                    title: 'Invalid File',
+                    message: validation.message
+                });
+                return;
+            }
 
-        // Parse existing parameters
-        const params = new URLSearchParams(existingParams);
+            // Show file info
+            showFileInfo(file);
 
-        // Remove file-related parameters
-        params.delete('uploaded_file_id');
-        params.delete('uploaded_file_name');
-        params.delete('find_recent_upload');
-
-        // Construct the clean URL
-        const cleanUrl = baseUrl + (params.toString() ? '?' + params.toString() : '');
-        window.location.href = cleanUrl;
-    }
-
-    /**
-     * Upload another receipt (start fresh)
-     */
-    function uploadAnother() {
-        // Redirect to fresh upload form preserving script/deployment IDs
-        const currentUrl = window.location.href;
-        const urlParts = currentUrl.split('?');
-        const baseUrl = urlParts[0];
-        const existingParams = urlParts[1] || '';
-
-        // Parse existing parameters
-        const params = new URLSearchParams(existingParams);
-
-        // Remove file-related parameters
-        params.delete('uploaded_file_id');
-        params.delete('uploaded_file_name');
-        params.delete('find_recent_upload');
-
-        // Construct the clean URL
-        const cleanUrl = baseUrl + (params.toString() ? '?' + params.toString() : '');
-        window.location.href = cleanUrl;
-    }
-
-    /**
-     * Return to dashboard
-     */
-    function returnToDashboard() {
-        // This would redirect to the Employee Center dashboard
-        // For now, just go back to the main page
-        window.location.href = '/app/center/card.nl?sc=-29';
-    }
-
-    /**
-     * View a specific expense record
-     * @param {string} recordId - Record ID to view
-     */
-    function viewRecord(recordId) {
-        if (recordId) {
-            const recordUrl = url.resolveRecord({
-                recordType: 'customrecord_ains_expense_capture',
-                recordId: recordId
-            });
-            window.location.href = recordUrl;
+        } catch (error) {
+            console.error('File selection validation error:', error);
         }
     }
 
-    // Return public functions
+    /**
+     * Validate uploaded file (NetSuite file object)
+     * @param {Object} fileObj - NetSuite file object
+     * @returns {Object} Validation result
+     */
+    function validateUploadedFile(fileObj) {
+        if (!fileObj) {
+            return { isValid: false, message: 'No file provided' };
+        }
+
+        // For NetSuite file objects, basic validation
+        return { isValid: true, message: 'File validation passed' };
+    }
+
+    /**
+     * Validate file from HTML input (for real-time feedback)
+     * @param {File} file - HTML File object
+     * @returns {Object} Validation result
+     */
+    function validateFileFromInput(file) {
+        try {
+            // Check file size (10MB limit)
+            const maxSizeBytes = 10 * 1024 * 1024; // 10MB
+            if (file.size > maxSizeBytes) {
+                return {
+                    isValid: false,
+                    message: `File size (${(file.size / (1024*1024)).toFixed(1)}MB) exceeds the 10MB limit.`
+                };
+            }
+
+            // Check file type
+            const fileName = file.name.toLowerCase();
+            const allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'tiff', 'tif'];
+            const fileExtension = fileName.split('.').pop();
+
+            if (!allowedExtensions.includes(fileExtension)) {
+                return {
+                    isValid: false,
+                    message: `File type '${fileExtension.toUpperCase()}' is not supported. Please use: ${allowedExtensions.join(', ').toUpperCase()}`
+                };
+            }
+
+            return { isValid: true, message: 'File validation passed' };
+
+        } catch (error) {
+            return { isValid: false, message: 'Error validating file: ' + error.message };
+        }
+    }
+
+    /**
+     * Show file information after selection
+     * @param {File} file - Selected file
+     */
+    function showFileInfo(file) {
+        try {
+            const infoHtml = `
+                <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 10px; border-radius: 3px; margin: 10px 0;">
+                    <strong>✅ File Selected:</strong> ${file.name}<br>
+                    <strong>Size:</strong> ${(file.size / (1024*1024)).toFixed(2)}MB<br>
+                    <strong>Type:</strong> ${file.type || 'Unknown'}<br>
+                    <em>Click "Upload & Process Receipt" to continue</em>
+                </div>
+            `;
+
+            // Try to find a place to inject this info
+            const uploadSection = document.querySelector('#upload_section_fs');
+            if (uploadSection) {
+                let infoDiv = document.getElementById('file-info-display');
+                if (!infoDiv) {
+                    infoDiv = document.createElement('div');
+                    infoDiv.id = 'file-info-display';
+                    uploadSection.appendChild(infoDiv);
+                }
+                infoDiv.innerHTML = infoHtml;
+            }
+
+        } catch (error) {
+            console.error('Error showing file info:', error);
+        }
+    }
+
+    /**
+     * Show processing message
+     * @param {string} message - Message to display
+     */
+    function showProcessingMessage(message) {
+        try {
+            // Create overlay
+            const overlay = document.createElement('div');
+            overlay.id = 'processing-overlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0,0,0,0.5);
+                z-index: 10000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            `;
+
+            const messageBox = document.createElement('div');
+            messageBox.style.cssText = `
+                background: white;
+                padding: 30px;
+                border-radius: 5px;
+                text-align: center;
+                max-width: 400px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            `;
+
+            messageBox.innerHTML = `
+                <div style="font-size: 18px; color: #1f4e79; margin-bottom: 15px;">
+                    🔄 Processing...
+                </div>
+                <div style="margin-bottom: 15px;">${message}</div>
+                <div style="font-size: 12px; color: #666;">
+                    Please wait while we process your receipt.
+                </div>
+            `;
+
+            overlay.appendChild(messageBox);
+            document.body.appendChild(overlay);
+
+        } catch (error) {
+            console.error('Error showing processing message:', error);
+        }
+    }
+
+    /**
+     * Upload a different file (clear current state)
+     */
+    function uploadDifferentFile() {
+        try {
+            // Get current URL without file parameters
+            const currentUrl = window.location.href;
+            const baseUrl = currentUrl.split('?')[0];
+
+            // Navigate back to upload form
+            window.location.href = baseUrl;
+
+        } catch (error) {
+            console.error('Error in uploadDifferentFile:', error);
+            dialog.alert({
+                title: 'Navigation Error',
+                message: 'Unable to return to upload form. Please refresh the page.'
+            });
+        }
+    }
+
+    /**
+     * Upload another receipt (same as uploadDifferentFile)
+     */
+    function uploadAnother() {
+        uploadDifferentFile();
+    }
+
+    /**
+     * Return to Employee Center Dashboard
+     */
+    function returnToDashboard() {
+        try {
+            // Try to detect Employee Center and navigate appropriately
+            if (window.parent && window.parent !== window) {
+                // We're in a popup/iframe, close it
+                window.parent.focus();
+                if (window.close) {
+                    window.close();
+                }
+            } else {
+                // Navigate to Employee Center home
+                window.location.href = '/app/center/userprefs.nl';
+            }
+
+        } catch (error) {
+            console.error('Error returning to dashboard:', error);
+            dialog.alert({
+                title: 'Navigation Error',
+                message: 'Unable to return to dashboard. Please use your browser navigation.'
+            });
+        }
+    }
+
     return {
         pageInit: pageInit,
-        saveRecord: saveRecord,
-        uploadDifferentFile: uploadDifferentFile,
-        uploadAnother: uploadAnother,
-        returnToDashboard: returnToDashboard,
-        viewRecord: viewRecord
+        saveRecord: saveRecord
     };
 });
