@@ -353,11 +353,7 @@ function(file, record, runtime, search, task, commonLib, llmProcessor) {
                 type: commonLib.CONSTANTS.RECORD_TYPES.EXPENSE_CAPTURE
             });
 
-            // Set the record name (required field)
-            expenseRecord.setValue({
-                fieldId: 'name',
-                value: `${data.llmResults.vendor || 'Unknown Vendor'} - ${data.fileName} - ${new Date().toLocaleDateString()}`
-            });
+            // Note: Name field is auto-generated due to enablenumbering=T (AINS-0001, AINS-0002, etc.)
 
             // Set basic file information
             expenseRecord.setValue({
@@ -496,11 +492,7 @@ function(file, record, runtime, search, task, commonLib, llmProcessor) {
                 type: commonLib.CONSTANTS.RECORD_TYPES.EXPENSE_CAPTURE
             });
 
-            // Set the record name (required field)
-            expenseRecord.setValue({
-                fieldId: 'name',
-                value: `Receipt Processing - ${fileName} - ${new Date().toLocaleDateString()}`
-            });
+            // Note: Name field is auto-generated due to enablenumbering=T (AINS-0001, AINS-0002, etc.)
 
             expenseRecord.setValue({
                 fieldId: commonLib.CONSTANTS.FIELDS.FILE_ATTACHMENT,
@@ -589,11 +581,7 @@ function(file, record, runtime, search, task, commonLib, llmProcessor) {
                 type: commonLib.CONSTANTS.RECORD_TYPES.EXPENSE_CAPTURE
             });
 
-            // Set the record name (required field)
-            expenseRecord.setValue({
-                fieldId: 'name',
-                value: `Processing Failed - ${fileName} - ${new Date().toLocaleDateString()}`
-            });
+            // Note: Name field is auto-generated due to enablenumbering=T (AINS-0001, AINS-0002, etc.)
 
             expenseRecord.setValue({
                 fieldId: commonLib.CONSTANTS.FIELDS.FILE_ATTACHMENT,
