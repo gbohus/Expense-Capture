@@ -167,7 +167,7 @@ function(file, search, log, commonLib) {
      */
     function generateOutputFilePath(trackingId) {
         const outputFileName = `receipt_analysis_${trackingId}.json`;
-        return `SuiteScripts/AI_NS_ExpenseCapture/OutputFiles/${outputFileName}`;
+        return `SuiteScripts/AI_NS_ExpenseCapture/OciOutputFiles/${outputFileName}`;
     }
 
     /**

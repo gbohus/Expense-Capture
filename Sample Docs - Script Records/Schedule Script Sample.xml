@@ -1,0 +1,24 @@
+<scheduledscript scriptid="customscript3256">
+  <description></description>
+  <isinactive>F</isinactive>
+  <name>DU formatting</name>
+  <notifyadmins>F</notifyadmins>
+  <notifyemails></notifyemails>
+  <notifyowner>T</notifyowner>
+  <scriptfile>[/SuiteScripts/DU Formatting.js]</scriptfile>
+  <scriptdeployments>
+    <scriptdeployment scriptid="customdeploy1">
+      <isdeployed>T</isdeployed>
+      <loglevel>DEBUG</loglevel>
+      <status>NOTSCHEDULED</status>
+      <title>DU - Formats Data</title>
+      <recurrence>
+        <single>
+          <repeat></repeat>
+          <startdate>2025-07-04</startdate>
+          <starttime>01:00:00Z</starttime>
+        </single>
+      </recurrence>
+    </scriptdeployment>
+  </scriptdeployments>
+</scheduledscript>

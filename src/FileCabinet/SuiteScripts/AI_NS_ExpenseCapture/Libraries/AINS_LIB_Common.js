@@ -27,6 +27,8 @@ function(runtime, log, url, query) {
             ERROR_MESSAGE: 'custrecord_ains_error_message',
             RAW_OCR_DATA: 'custrecord_ains_raw_ocr_data',
             LLM_RESPONSE: 'custrecord_ains_llm_response',
+            LLM_REQUEST: 'custrecord_ains_llm_request',
+            LLM_RAW_RESPONSE: 'custrecord_ains_llm_raw_response',
             CONFIDENCE_SCORE: 'custrecord_ains_confidence_score',
             PROCESSED_DATE: 'custrecord_ains_processed_date',
             FILE_SIZE: 'custrecord_ains_file_size',
@@ -50,7 +52,10 @@ function(runtime, log, url, query) {
 
         DEPLOYMENT_IDS: {
             UPLOAD_SUITELET: 'customdeploy_ains_sl_receiptupload',
-            PROCESS_MR: 'customdeploy_ains_mr_processreceipts'
+            PROCESS_MR: 'customdeploy_ains_mr_processreceipts',
+            IMPORT_MODAL: 'customdeploy_ains_sl_expenseimportmodal',
+            EMPLOYEE_PORTLET: 'customdeploy_ains_pl_empcentportlet',
+            ER_CLIENT_SCRIPT: 'customdeploy_ains_cs_expensereportimport'
         },
 
         SCRIPT_PARAMS: {

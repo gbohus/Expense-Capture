@@ -413,18 +413,16 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
         });
 
         statusField.defaultValue = `
-            <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin: 10px 0;">
-                <h3 style="margin-top: 0;">🔄 Processing Started!</h3>
-                <p><strong>File:</strong> ${details.fileName}</p>
-                <p><strong>Tracking ID:</strong> ${details.trackingId}</p>
-                <p><strong>Task ID:</strong> ${details.mrTaskId}</p>
-                <p>Your receipt is being processed by AI. The system will:</p>
-                <ul>
-                    <li>Extract text using Oracle OCI Document Understanding</li>
-                    <li>Format data using NetSuite LLM</li>
-                    <li>Create expense capture record with extracted details</li>
-                </ul>
-                <p><em>Processing typically takes 1-2 minutes. Check your dashboard for updates.</em></p>
+            <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 20px; border-radius: 5px; margin: 20px 0; text-align: center;">
+                <h2 style="margin-top: 0; color: #155724;">✅ Upload Successful!</h2>
+                <p style="font-size: 16px; margin: 15px 0;"><strong>File:</strong> ${details.fileName}</p>
+                <hr style="border: none; border-top: 1px solid #c3e6cb; margin: 20px 0;">
+                <h3 style="color: #155724;">🤖 AI Processing Started</h3>
+                <p style="font-size: 15px; margin: 15px 0;">Your receipt is being processed automatically.</p>
+                <p style="font-size: 14px; color: #666; margin: 10px 0;">
+                    <em>Processing typically takes 2-5 minutes.<br/>
+                    Check your dashboard for the completed expense record.</em>
+                </p>
             </div>
         `;
 
@@ -753,121 +751,6 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
                 <p><em>💡 Tip: You can import processed expenses into your expense reports later!</em></p>
             </div>
         `;
-    }
-
-    /**
-     * Find the most recently uploaded file by the current user
-     * @param {string} userId - Current user ID
-     * @returns {Object|null} File object with id and name, or null if not found
-     */
-    function findRecentlyUploadedFile(userId) {
-        try {
-            // Add a small delay to allow file to be fully committed to database
-            // This is a synchronous delay in the server-side script
-            const startTime = Date.now();
-            while (Date.now() - startTime < 2000) {
-                // 2 second delay
-            }
-
-            // Search for files uploaded by the current user in the last 10 minutes
-            const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
-
-            // Create saved search for files
-            const fileSearch = search.create({
-                type: "file",
-                columns: [
-                    search.createColumn({ name: "name", label: "Name" }),
-                    search.createColumn({ name: "folder", label: "Folder" }),
-                    search.createColumn({ name: "created", label: "Date Created" }),
-                    search.createColumn({ name: "owner", label: "Owner" })
-                ],
-                filters: [
-                    search.createFilter({
-                        name: 'created',
-                        operator: search.Operator.ONORAFTER,
-                        values: tenMinutesAgo
-                    })
-                ]
-            });
-
-            // Run the search and get results
-            const allRecentFiles = [];
-            fileSearch.run().each(function(result) {
-                allRecentFiles.push({
-                    id: result.id,
-                    name: result.getValue('name'),
-                    created: result.getValue('created'),
-                    folder: result.getValue('folder'),
-                    owner: result.getValue('owner')
-                });
-                return allRecentFiles.length < 20; // Limit to first 20 results
-            });
-
-            // Log ALL recent files for debugging
-            commonLib.logOperation('debug_all_recent_files', {
-                userId: userId,
-                searchTime: tenMinutesAgo.toISOString(),
-                allRecentCount: allRecentFiles.length,
-                allRecentFiles: allRecentFiles.slice(0, 10).map(f => ({
-                    id: f.id,
-                    name: f.name,
-                    created: f.created,
-                    folder: f.folder,
-                    owner: f.owner,
-                    matchesUser: f.owner == userId
-                }))
-            });
-
-            // Find files owned by the current user
-            const userFiles = allRecentFiles.filter(f => f.owner == userId);
-
-            // Log specific user files
-            commonLib.logOperation('recent_file_search', {
-                userId: userId,
-                userIdType: typeof userId,
-                searchTime: tenMinutesAgo.toISOString(),
-                resultsCount: userFiles.length,
-                userFiles: userFiles.slice(0, 3).map(f => ({
-                    id: f.id,
-                    name: f.name,
-                    created: f.created,
-                    folder: f.folder
-                }))
-            });
-
-            if (userFiles.length > 0) {
-                // Sort by creation date (most recent first) and take the first one
-                userFiles.sort((a, b) => new Date(b.created) - new Date(a.created));
-                const fileResult = userFiles[0];
-
-                commonLib.logOperation('found_recent_file', {
-                    fileId: fileResult.id,
-                    fileName: fileResult.name,
-                    created: fileResult.created,
-                    folder: fileResult.folder,
-                    userId: userId
-                });
-
-                return {
-                    id: fileResult.id,
-                    name: fileResult.name
-                };
-            }
-
-            commonLib.logOperation('no_recent_file_found', {
-                userId: userId,
-                searchTime: tenMinutesAgo.toISOString()
-            });
-            return null;
-
-        } catch (error) {
-            commonLib.logOperation('find_recent_file_error', {
-                userId: userId,
-                error: error.message,
-                stack: error.stack
-            }, 'error');
-            return null;
-        }
     }
 
     /**

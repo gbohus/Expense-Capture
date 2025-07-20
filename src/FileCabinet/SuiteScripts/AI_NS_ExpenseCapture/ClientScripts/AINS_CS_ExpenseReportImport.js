@@ -110,7 +110,7 @@ function(currentRecord, dialog, url, query, commonLib) {
             // Build modal URL with parameters
             const modalUrl = url.resolveScript({
                 scriptId: commonLib.CONSTANTS.SCRIPT_IDS.IMPORT_MODAL,
-                deploymentId: commonLib.CONSTANTS.SCRIPT_IDS.IMPORT_MODAL,
+                deploymentId: commonLib.CONSTANTS.DEPLOYMENT_IDS.IMPORT_MODAL,
                 params: {
                     employee: employeeId,
                     expenseReport: currentRec.id || 'new'

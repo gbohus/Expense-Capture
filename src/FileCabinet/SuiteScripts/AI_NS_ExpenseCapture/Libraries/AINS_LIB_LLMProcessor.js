@@ -82,6 +82,7 @@ function(llm, log, search, commonLib) {
                 trackingId: trackingId,
                 expenseData: finalData,
                 rawLLMResponse: response.text,
+                rawLLMRequest: prompt,
                 model: response.model,
                 citations: response.citations || []
             };
@@ -153,7 +154,7 @@ Return ONLY this exact JSON structure:
     "date": "string - transaction date in YYYY-MM-DD format",
     "categoryId": "string - exact category ID from list above",
     "description": "string - clear expense description (3-6 words)",
-    "confidence": number - confidence score 0.0-1.0 based on data clarity,
+    "confidence": number - confidence score 1-10 based on data clarity - 10 being the highest confidence",
     "reasoning": "string - brief explanation of category choice"
 }
 

@@ -280,6 +280,86 @@
       <storevalue>T</storevalue>
       <subtab>[scriptid=customrecord_ains_expense_capture.tab_technical]</subtab>
     </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_ains_llm_request">
+      <accesslevel>2</accesslevel>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description></description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>CLOBTEXT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help>Raw request prompt sent to NetSuite LLM for expense processing</help>
+      <isformula>F</isformula>
+      <ismandatory>F</ismandatory>
+      <isparent>F</isparent>
+      <label>LLM Request</label>
+      <linktext></linktext>
+      <maxlength></maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete></onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype></selectrecordtype>
+      <showinlist>F</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab>[scriptid=customrecord_ains_expense_capture.tab_technical]</subtab>
+    </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_ains_llm_raw_response">
+      <accesslevel>2</accesslevel>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description></description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>CLOBTEXT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help>Raw unprocessed response text from NetSuite LLM processing</help>
+      <isformula>F</isformula>
+      <ismandatory>F</ismandatory>
+      <isparent>F</isparent>
+      <label>LLM Raw Response</label>
+      <linktext></linktext>
+      <maxlength></maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete></onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype></selectrecordtype>
+      <showinlist>F</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab>[scriptid=customrecord_ains_expense_capture.tab_technical]</subtab>
+    </customrecordcustomfield>
     <customrecordcustomfield scriptid="custrecord_ains_created_by">
       <accesslevel>2</accesslevel>
       <allowquickadd>F</allowquickadd>
@@ -438,7 +518,7 @@
       <sourcefrom></sourcefrom>
       <sourcelist></sourcelist>
       <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
+      <subtab></subtab>
     </customrecordcustomfield>
     <customrecordcustomfield scriptid="custrecord_ains_vendor_name">
       <accesslevel>2</accesslevel>
@@ -478,7 +558,7 @@
       <sourcefrom></sourcefrom>
       <sourcelist></sourcelist>
       <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
+      <subtab></subtab>
     </customrecordcustomfield>
     <customrecordcustomfield scriptid="custrecord_ains_expense_amount">
       <accesslevel>2</accesslevel>
@@ -518,7 +598,7 @@
       <sourcefrom></sourcefrom>
       <sourcelist></sourcelist>
       <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
+      <subtab></subtab>
     </customrecordcustomfield>
     <customrecordcustomfield scriptid="custrecord_ains_expense_date">
       <accesslevel>2</accesslevel>
@@ -558,7 +638,7 @@
       <sourcefrom></sourcefrom>
       <sourcelist></sourcelist>
       <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
+      <subtab></subtab>
     </customrecordcustomfield>
     <customrecordcustomfield scriptid="custrecord_ains_expense_category">
       <accesslevel>2</accesslevel>
@@ -598,7 +678,7 @@
       <sourcefrom></sourcefrom>
       <sourcelist></sourcelist>
       <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
+      <subtab></subtab>
     </customrecordcustomfield>
     <customrecordcustomfield scriptid="custrecord_ains_description">
       <accesslevel>2</accesslevel>
@@ -638,7 +718,7 @@
       <sourcefrom></sourcefrom>
       <sourcelist></sourcelist>
       <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
+      <subtab></subtab>
     </customrecordcustomfield>
     <customrecordcustomfield scriptid="custrecord_ains_processing_status">
       <accesslevel>2</accesslevel>
@@ -678,7 +758,7 @@
       <sourcefrom></sourcefrom>
       <sourcelist></sourcelist>
       <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
+      <subtab></subtab>
     </customrecordcustomfield>
     <customrecordcustomfield scriptid="custrecord_ains_confidence_score">
       <accesslevel>2</accesslevel>
@@ -718,7 +798,7 @@
       <sourcefrom></sourcefrom>
       <sourcelist></sourcelist>
       <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_main]</subtab>
+      <subtab></subtab>
     </customrecordcustomfield>
   </customrecordcustomfields>
   <permissions>
@@ -742,9 +822,6 @@
       <tabparent></tabparent>
       <tabtitle>Integration</tabtitle>
     </subtab>
-    <subtab scriptid="tab_main">
-      <tabparent></tabparent>
-      <tabtitle>Main</tabtitle>
-    </subtab>
+
   </subtabs>
 </customrecordtype>
