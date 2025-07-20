@@ -4,12 +4,24 @@
  * @NModuleScope SameAccount
  * @description AI NS|CS|Expense Report Import - Simple expense import functionality
  */
-define(['N/currentRecord', 'N/https', 'N/url'], function(currentRecord, https, url) {
+define(['N/currentRecord', 'N/https', 'N/url', '../Libraries/AINS_LIB_Common'],
+    function(currentRecord, https, url, commonLib) {
 
     function pageInit(context) {
         // Only add button in create/edit mode
         if (context.mode === 'create' || context.mode === 'edit') {
+            loadStyles();
             setTimeout(addImportButton, 500); // Small delay to ensure DOM is ready
+        }
+    }
+
+    function loadStyles() {
+        // Inject the master CSS
+        if (!document.getElementById('ains-styles')) {
+            const style = document.createElement('style');
+            style.id = 'ains-styles';
+            style.textContent = commonLib.getMasterCSSString();
+            document.head.appendChild(style);
         }
     }
 
@@ -62,24 +74,124 @@ define(['N/currentRecord', 'N/https', 'N/url'], function(currentRecord, https, u
                     return;
                 }
 
-                // Simple confirmation
-                let message = `Found ${expenses.length} expense(s) to import:\n\n`;
-                expenses.slice(0, 5).forEach(exp => {
-                    message += `• ${exp.vendorName || 'Unknown'} - $${exp.amount || '0'}\n`;
-                });
-                if (expenses.length > 5) {
-                    message += `... and ${expenses.length - 5} more\n`;
-                }
-                message += '\nImport all expenses?';
-
-                if (confirm(message)) {
-                    addExpensesToReport(expenses);
-                }
+                // Show selection modal
+                showExpenseSelectionModal(expenses);
             } else {
                 alert('Error loading expenses. Please try again.');
             }
         }).catch(function(error) {
             alert('Error: ' + error);
+        });
+    }
+
+    function showExpenseSelectionModal(expenses) {
+        // Create modal overlay using CSS classes
+        const overlay = document.createElement('div');
+        overlay.className = 'ains-modal-overlay';
+        overlay.id = 'expense-modal-overlay';
+
+        // Create modal content
+        const modal = document.createElement('div');
+        modal.className = 'ains-modal';
+
+        // Modal HTML content with CSS classes
+        let modalHTML = `
+            <div class="ains-modal-header">
+                <h2 class="ains-modal-title">Select Expenses to Import</h2>
+                <button class="ains-modal-close" id="modal-close-btn">&times;</button>
+            </div>
+            <div class="ains-modal-body">
+                <div class="ains-form-group">
+                    <label class="ains-checkbox">
+                        <input type="checkbox" id="select-all-expenses">
+                        Select All (${expenses.length} expenses)
+                    </label>
+                </div>
+                <div class="ains-table-container">
+                    <table class="ains-table">
+                        <thead>
+                            <tr>
+                                <th>Select</th>
+                                <th>Date</th>
+                                <th>Vendor</th>
+                                <th>Amount</th>
+                                <th>Category</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+
+        expenses.forEach((expense, index) => {
+            modalHTML += `
+                <tr>
+                    <td>
+                        <label class="ains-checkbox">
+                            <input type="checkbox" class="expense-checkbox" data-index="${index}" checked>
+                        </label>
+                    </td>
+                    <td>${expense.date || 'N/A'}</td>
+                    <td>${expense.vendorName || 'Unknown'}</td>
+                    <td>$${parseFloat(expense.amount || 0).toFixed(2)}</td>
+                    <td>${expense.categoryName || 'N/A'}</td>
+                    <td><span class="ains-text-muted">${(expense.description || 'N/A').substring(0, 50)}${(expense.description || '').length > 50 ? '...' : ''}</span></td>
+                </tr>
+            `;
+        });
+
+        modalHTML += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="ains-modal-footer">
+                <button id="cancel-import" class="ains-btn ains-btn-secondary">Cancel</button>
+                <button id="import-selected" class="ains-btn ains-btn-primary">Import Selected</button>
+            </div>
+        `;
+
+        modal.innerHTML = modalHTML;
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+                // Event listeners
+        document.getElementById('select-all-expenses').addEventListener('change', function(e) {
+            const checkboxes = document.querySelectorAll('.expense-checkbox');
+            checkboxes.forEach(cb => cb.checked = e.target.checked);
+        });
+
+        // Close button event listener
+        document.getElementById('modal-close-btn').addEventListener('click', function() {
+            document.body.removeChild(overlay);
+        });
+
+        document.getElementById('cancel-import').addEventListener('click', function() {
+            document.body.removeChild(overlay);
+        });
+
+        document.getElementById('import-selected').addEventListener('click', function() {
+            const selectedExpenses = [];
+            const checkboxes = document.querySelectorAll('.expense-checkbox:checked');
+
+            checkboxes.forEach(cb => {
+                const index = parseInt(cb.getAttribute('data-index'));
+                selectedExpenses.push(expenses[index]);
+            });
+
+            if (selectedExpenses.length === 0) {
+                alert('Please select at least one expense to import.');
+                return;
+            }
+
+            document.body.removeChild(overlay);
+            addExpensesToReport(selectedExpenses);
+        });
+
+        // Close on overlay click
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+                document.body.removeChild(overlay);
+            }
         });
     }
 
