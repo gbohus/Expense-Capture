@@ -159,10 +159,10 @@ Return ONLY this exact JSON structure:
 }
 
 QUALITY STANDARDS:
-- High confidence (0.8+): Clear vendor, amount, date, obvious category match
-- Medium confidence (0.5-0.8): Most fields clear, category requires interpretation
-- Low confidence (0.3-0.5): Some fields unclear but reasonable assumptions possible
-- Never return confidence below 0.3 - always make best judgment
+- High confidence (8+): Clear vendor, amount, date, obvious category match
+- Medium confidence (5-7): Most fields clear, category requires interpretation
+- Low confidence (3-4): Some fields unclear but reasonable assumptions possible
+- Never return confidence below 3 - always make best judgment
 - NO null or blank values - use best available data
 
 SMART DEFAULTS:
