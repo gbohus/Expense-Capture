@@ -2,325 +2,147 @@
  * @NApiVersion 2.1
  * @NScriptType ClientScript
  * @NModuleScope SameAccount
- * @description AI NS|CS|Expense Report Import - Adds import functionality to Expense Reports
+ * @description AI NS|CS|Expense Report Import - Simple expense import functionality
  */
+define(['N/currentRecord', 'N/https', 'N/url'], function(currentRecord, https, url) {
 
-define(['N/currentRecord', 'N/ui/dialog', 'N/url', 'N/query', '../Libraries/AINS_LIB_Common'],
-function(currentRecord, dialog, url, query, commonLib) {
-
-    const SCRIPT_NAME = 'AI NS|CS|Expense Report Import';
-
-    /**
-     * Executed when the page is loaded
-     * @param {Object} context - Script context
-     */
     function pageInit(context) {
-        try {
-            commonLib.logOperation('pageInit', {
-                mode: context.mode,
-                recordType: context.currentRecord.type
-            });
-
-            // Only add button in edit/create mode for expense reports
-            if (context.mode !== 'create' && context.mode !== 'edit') {
-                return;
-            }
-
-            // Add the import button
-            addImportButton();
-
-        } catch (error) {
-            console.error('Error in pageInit:', error);
-            commonLib.logOperation('pageInit', { error: error.message }, 'error');
+        // Only add button in create/edit mode
+        if (context.mode === 'create' || context.mode === 'edit') {
+            setTimeout(addImportButton, 500); // Small delay to ensure DOM is ready
         }
     }
 
-    /**
-     * Add the Import Captured Expenses button to the form
-     */
     function addImportButton() {
-        try {
-            // Check if button already exists
-            if (document.getElementById('custpage_import_expenses_btn')) {
-                return;
-            }
+        // Find the expense sublist area
+        const expenseTable = document.querySelector('[id*="expense"]') ||
+                            document.querySelector('.uir-machine-table-container') ||
+                            document.querySelector('#main_form');
 
-            // Find the expense line tab or a suitable location to add the button
-            const expenseLineTab = findExpenseLineTab();
-            if (!expenseLineTab) {
-                commonLib.logOperation('addImportButton', { warning: 'Could not find expense line tab' });
-                return;
-            }
+        if (!expenseTable) return;
 
-            // Create the import button
-            const importButton = document.createElement('input');
-            importButton.type = 'button';
-            importButton.id = 'custpage_import_expenses_btn';
-            importButton.value = 'Import Captured Expenses';
-            importButton.className = 'rndrctrl_button';
-            importButton.style.marginLeft = '10px';
-            importButton.onclick = openImportModal;
+        // Check if button already exists
+        if (document.getElementById('import_expenses_btn')) return;
 
-            // Insert button near expense lines
-            const buttonContainer = document.createElement('div');
-            buttonContainer.style.margin = '10px 0';
-            buttonContainer.appendChild(importButton);
+        // Create import button
+        const button = document.createElement('input');
+        button.type = 'button';
+        button.id = 'import_expenses_btn';
+        button.value = 'Import Captured Expenses';
+        button.className = 'uir-button';
+        button.style.margin = '5px';
+        button.onclick = importCapturedExpenses;
 
-            expenseLineTab.insertBefore(buttonContainer, expenseLineTab.firstChild);
+        // Create container and add button
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.padding = '10px 0';
+        buttonContainer.appendChild(button);
 
-            commonLib.logOperation('addImportButton', { success: 'Import button added successfully' });
-
-        } catch (error) {
-            console.error('Error adding import button:', error);
-            commonLib.logOperation('addImportButton', { error: error.message }, 'error');
-        }
+        // Insert before the expense table
+        expenseTable.parentNode.insertBefore(buttonContainer, expenseTable);
     }
 
-    /**
-     * Find the expense line tab or suitable container
-     * @returns {Element} Element to attach button to
-     */
-    function findExpenseLineTab() {
-        // Try different selectors to find expense lines section
-        const selectors = [
-            '[id*="expense"]',
-            '[id*="line"]',
-            '.uir-page-title-secondline',
-            '#main_form'
-        ];
+    function importCapturedExpenses() {
+        // Build Suitelet URL
+        const suiteletUrl = url.resolveScript({
+            scriptId: 'customscript_ains_sl_expenseimportmodal',
+            deploymentId: 'customdeploy_ains_sl_expenseimportmodal',
+            returnExternalUrl: false
+        });
 
-        for (const selector of selectors) {
-            const element = document.querySelector(selector);
-            if (element) {
-                return element;
-            }
-        }
+        // Fetch expenses
+        https.get.promise({
+            url: suiteletUrl
+        }).then(function(response) {
+            if (response.code === 200) {
+                const expenses = JSON.parse(response.body);
 
-        return document.body; // Fallback
-    }
-
-    /**
-     * Open the import modal window
-     */
-    function openImportModal() {
-        try {
-            const currentRec = currentRecord.get();
-            const employeeId = currentRec.getValue('entity') || commonLib.getCurrentUser().id;
-
-            // Build modal URL with parameters
-            const modalUrl = url.resolveScript({
-                scriptId: commonLib.CONSTANTS.SCRIPT_IDS.IMPORT_MODAL,
-                deploymentId: commonLib.CONSTANTS.DEPLOYMENT_IDS.IMPORT_MODAL,
-                params: {
-                    employee: employeeId,
-                    expenseReport: currentRec.id || 'new'
+                if (!expenses || expenses.length === 0) {
+                    alert('No processed expenses available to import.');
+                    return;
                 }
-            });
 
-            // Open modal window
-            const modalWindow = window.open(
-                modalUrl,
-                'importExpensesModal',
-                'width=900,height=700,scrollbars=yes,resizable=yes,centerscreen=yes'
-            );
-
-            if (!modalWindow) {
-                dialog.alert({
-                    title: 'Popup Blocked',
-                    message: 'Please allow popups for this site to use the import feature.'
+                // Simple confirmation
+                let message = `Found ${expenses.length} expense(s) to import:\n\n`;
+                expenses.slice(0, 5).forEach(exp => {
+                    message += `• ${exp.vendorName || 'Unknown'} - $${exp.amount || '0'}\n`;
                 });
-                return;
-            }
-
-            // Set up message listener for modal communication
-            window.addEventListener('message', handleModalMessage, false);
-
-            commonLib.logOperation('openImportModal', {
-                employeeId: employeeId,
-                expenseReportId: currentRec.id
-            });
-
-        } catch (error) {
-            console.error('Error opening import modal:', error);
-            dialog.alert({
-                title: 'Error',
-                message: 'Failed to open import modal: ' + commonLib.formatErrorMessage(error)
-            });
-            commonLib.logOperation('openImportModal', { error: error.message }, 'error');
-        }
-    }
-
-    /**
-     * Handle messages from the import modal
-     * @param {MessageEvent} event - Message event from modal
-     */
-    function handleModalMessage(event) {
-        try {
-            if (event.data && event.data.action === 'importExpenses') {
-                const selectedExpenses = event.data.expenses;
-
-                if (selectedExpenses && selectedExpenses.length > 0) {
-                    importSelectedExpenses(selectedExpenses);
+                if (expenses.length > 5) {
+                    message += `... and ${expenses.length - 5} more\n`;
                 }
+                message += '\nImport all expenses?';
 
-                // Close modal
-                event.source.close();
+                if (confirm(message)) {
+                    addExpensesToReport(expenses);
+                }
+            } else {
+                alert('Error loading expenses. Please try again.');
             }
-        } catch (error) {
-            console.error('Error handling modal message:', error);
-            commonLib.logOperation('handleModalMessage', { error: error.message }, 'error');
-        }
+        }).catch(function(error) {
+            alert('Error: ' + error);
+        });
     }
 
-    /**
-     * Import selected expenses into the current expense report
-     * @param {Array} expenses - Array of expense data objects
-     */
-    function importSelectedExpenses(expenses) {
+    function addExpensesToReport(expenses) {
+        const rec = currentRecord.get();
+        let addedCount = 0;
+
         try {
-            const currentRec = currentRecord.get();
-            let importedCount = 0;
-            let errorCount = 0;
+            expenses.forEach(expense => {
+                rec.selectNewLine({ sublistId: 'expense' });
 
-            commonLib.logOperation('importSelectedExpenses', {
-                expenseCount: expenses.length,
-                expenseReportId: currentRec.id
-            });
-
-            // Process each selected expense
-            expenses.forEach((expense, index) => {
-                try {
-                    // Add new expense line
-                    const lineNum = currentRec.getLineCount('expense');
-                    currentRec.insertLine({
-                        sublistId: 'expense',
-                        line: lineNum
-                    });
-
-                    // Set line values from captured expense data
-                    currentRec.setSublistValue({
-                        sublistId: 'expense',
-                        fieldId: 'category',
-                        line: lineNum,
-                        value: expense.categoryId
-                    });
-
-                    currentRec.setSublistValue({
-                        sublistId: 'expense',
-                        fieldId: 'amount',
-                        line: lineNum,
-                        value: expense.amount
-                    });
-
-                    currentRec.setSublistValue({
+                if (expense.date) {
+                    rec.setCurrentSublistValue({
                         sublistId: 'expense',
                         fieldId: 'expensedate',
-                        line: lineNum,
-                        value: expense.date
+                        value: new Date(expense.date)
                     });
+                }
 
-                    currentRec.setSublistValue({
+                if (expense.categoryId) {
+                    rec.setCurrentSublistValue({
+                        sublistId: 'expense',
+                        fieldId: 'category',
+                        value: expense.categoryId
+                    });
+                }
+
+                if (expense.amount) {
+                    rec.setCurrentSublistValue({
+                        sublistId: 'expense',
+                        fieldId: 'amount',
+                        value: expense.amount
+                    });
+                }
+
+                if (expense.description || expense.vendorName) {
+                    rec.setCurrentSublistValue({
                         sublistId: 'expense',
                         fieldId: 'memo',
-                        line: lineNum,
                         value: expense.description || expense.vendorName
                     });
-
-                    // Set receipt attachment if available
-                    if (expense.fileId) {
-                        currentRec.setSublistValue({
-                            sublistId: 'expense',
-                            fieldId: 'receipt',
-                            line: lineNum,
-                            value: expense.fileId
-                        });
-                    }
-
-                    // Commit the line
-                    currentRec.commitLine({ sublistId: 'expense' });
-                    importedCount++;
-
-                } catch (lineError) {
-                    console.error(`Error importing expense ${index}:`, lineError);
-                    errorCount++;
                 }
+
+                if (expense.fileId) {
+                    rec.setCurrentSublistValue({
+                        sublistId: 'expense',
+                        fieldId: 'receipt',
+                        value: expense.fileId
+                    });
+                }
+
+                rec.commitLine({ sublistId: 'expense' });
+                addedCount++;
             });
 
-            // Show success/error message
-            const message = `Import completed: ${importedCount} expenses imported`;
-            const fullMessage = errorCount > 0 ?
-                `${message}, ${errorCount} errors encountered` : message;
-
-            dialog.alert({
-                title: 'Import Results',
-                message: fullMessage
-            });
-
-            commonLib.logOperation('importSelectedExpenses', {
-                importedCount: importedCount,
-                errorCount: errorCount
-            });
-
-            // Update captured expense records to mark as imported
-            updateCapturedExpenseRecords(expenses);
+            alert(`Successfully imported ${addedCount} expense(s)!`);
 
         } catch (error) {
-            console.error('Error importing expenses:', error);
-            dialog.alert({
-                title: 'Import Error',
-                message: 'Failed to import expenses: ' + commonLib.formatErrorMessage(error)
-            });
-            commonLib.logOperation('importSelectedExpenses', { error: error.message }, 'error');
+            alert('Error adding expenses: ' + error.message);
         }
     }
 
-    /**
-     * Update captured expense records to mark them as imported
-     * @param {Array} expenses - Array of imported expense objects
-     */
-    function updateCapturedExpenseRecords(expenses) {
-        try {
-            // This would typically be done via a server-side call
-            // For now, we'll log the action and rely on the modal to handle updates
-            const expenseIds = expenses.map(exp => exp.id);
-
-            commonLib.logOperation('updateCapturedExpenseRecords', {
-                action: 'mark_as_imported',
-                expenseIds: expenseIds
-            });
-
-            // Note: In a production environment, you might want to make a server-side call
-            // to update the captured expense records with imported status and ER reference
-
-        } catch (error) {
-            console.error('Error updating captured expense records:', error);
-            commonLib.logOperation('updateCapturedExpenseRecords', { error: error.message }, 'error');
-        }
-    }
-
-    /**
-     * Validate before save
-     * @param {Object} context - Script context
-     * @returns {boolean} True to allow save, false to prevent
-     */
-    function saveRecord(context) {
-        try {
-            // Perform any necessary validation before saving
-            commonLib.logOperation('saveRecord', {
-                mode: context.currentRecord.getValue('tranid') || 'new'
-            });
-
-            return true;
-        } catch (error) {
-            console.error('Error in saveRecord:', error);
-            commonLib.logOperation('saveRecord', { error: error.message }, 'error');
-            return true; // Don't block save due to script errors
-        }
-    }
-
-    // Return public functions
     return {
-        pageInit: pageInit,
-        saveRecord: saveRecord
+        pageInit: pageInit
     };
 });

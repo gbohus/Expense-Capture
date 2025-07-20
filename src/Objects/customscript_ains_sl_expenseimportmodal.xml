@@ -1,7 +1,7 @@
 <suitelet scriptid="customscript_ains_sl_expenseimportmodal">
-  <description>AI NS|SL|Expense Import Modal - Modal interface for selecting captured expenses to import</description>
+  <description>AI NS|SL|Expense Import Data Provider - Provides available captured expenses as JSON data.</description>
   <isinactive>F</isinactive>
-  <name>AI NS|SL|Expense Import Modal</name>
+  <name>AI NS|SL|Expense Import Data Provider</name>
   <notifyadmins>F</notifyadmins>
   <notifyemails></notifyemails>
   <notifyowner>T</notifyowner>
@@ -19,7 +19,7 @@
       <loglevel>DEBUG</loglevel>
       <runasrole>ADMINISTRATOR</runasrole>
       <status>RELEASED</status>
-      <title>AI NS Expense Import Modal</title>
+      <title>AI NS Expense Import Data Provider</title>
     </scriptdeployment>
   </scriptdeployments>
 </suitelet>
