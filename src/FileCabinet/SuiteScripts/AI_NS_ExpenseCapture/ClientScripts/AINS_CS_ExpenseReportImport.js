@@ -87,28 +87,28 @@ define(['N/currentRecord', 'N/https', 'N/url', '../Libraries/AINS_LIB_Common'],
     function showExpenseSelectionModal(expenses) {
         // Create modal overlay using CSS classes
         const overlay = document.createElement('div');
-        overlay.className = 'ains-modal-overlay';
+        overlay.className = 'my-app-modal-backdrop';
         overlay.id = 'expense-modal-overlay';
 
         // Create modal content
         const modal = document.createElement('div');
-        modal.className = 'ains-modal';
+        modal.className = 'my-app-modal-dialog';
 
         // Modal HTML content with CSS classes
         let modalHTML = `
-            <div class="ains-modal-header">
-                <h2 class="ains-modal-title">Select Expenses to Import</h2>
-                <button class="ains-modal-close" id="modal-close-btn">&times;</button>
+            <div class="my-app-modal-header">
+                <h2 style="margin: 0; font-size: 16px; font-weight: 700;">Select Expenses to Import</h2>
+                <button class="close-button" id="modal-close-btn">&times;</button>
             </div>
-            <div class="ains-modal-body">
-                <div class="ains-form-group">
-                    <label class="ains-checkbox">
-                        <input type="checkbox" id="select-all-expenses">
+            <div class="my-app-modal-body">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: inline-flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="select-all-expenses" style="margin-right: 8px; transform: scale(1.2);">
                         Select All (${expenses.length} expenses)
                     </label>
                 </div>
-                <div class="ains-table-container">
-                    <table class="ains-table">
+                <div class="my-app-table-container">
+                    <table class="my-app-table">
                         <thead>
                             <tr>
                                 <th>Select</th>
@@ -126,15 +126,15 @@ define(['N/currentRecord', 'N/https', 'N/url', '../Libraries/AINS_LIB_Common'],
             modalHTML += `
                 <tr>
                     <td>
-                        <label class="ains-checkbox">
-                            <input type="checkbox" class="expense-checkbox" data-index="${index}" checked>
+                        <label style="display: inline-flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" class="expense-checkbox" data-index="${index}" checked style="margin-right: 8px; transform: scale(1.2);">
                         </label>
                     </td>
                     <td>${expense.date || 'N/A'}</td>
                     <td>${expense.vendorName || 'Unknown'}</td>
                     <td>$${parseFloat(expense.amount || 0).toFixed(2)}</td>
                     <td>${expense.categoryName || 'N/A'}</td>
-                    <td><span class="ains-text-muted">${(expense.description || 'N/A').substring(0, 50)}${(expense.description || '').length > 50 ? '...' : ''}</span></td>
+                    <td><span style="color: #666;">${(expense.description || 'N/A').substring(0, 50)}${(expense.description || '').length > 50 ? '...' : ''}</span></td>
                 </tr>
             `;
         });
@@ -144,9 +144,9 @@ define(['N/currentRecord', 'N/https', 'N/url', '../Libraries/AINS_LIB_Common'],
                     </table>
                 </div>
             </div>
-            <div class="ains-modal-footer">
-                <button id="cancel-import" class="ains-btn ains-btn-secondary">Cancel</button>
-                <button id="import-selected" class="ains-btn ains-btn-primary">Import Selected</button>
+            <div class="my-app-modal-footer">
+                <button id="cancel-import" class="my-app-button">Cancel</button>
+                <button id="import-selected" class="my-app-button my-app-button-primary">Import Selected</button>
             </div>
         `;
 
@@ -238,7 +238,7 @@ define(['N/currentRecord', 'N/https', 'N/url', '../Libraries/AINS_LIB_Common'],
                 if (expense.fileId) {
                     rec.setCurrentSublistValue({
                         sublistId: 'expense',
-                        fieldId: 'receipt',
+                        fieldId: 'expmediaitem',
                         value: expense.fileId
                     });
                 }

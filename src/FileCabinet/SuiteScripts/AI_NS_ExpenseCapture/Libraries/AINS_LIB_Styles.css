@@ -1,338 +1,430 @@
-/* AI NS Expense Capture - Master CSS Library */
-/* Based on NetSuite Redwood Design System */
+/* Miniature NetSuite Redwood-inspired Styles for Custom Components */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+:focus {
+    outline: 0;
+}
 
 :root {
+    /* --- NetSuite Redwood Design System Variables (Extracted Core) --- */
     /* Spacing */
-    --nsn-spacing-xs: 4px;
-    --nsn-spacing-sm: 8px;
-    --nsn-spacing-md: 16px;
-    --nsn-spacing-lg: 24px;
-    --nsn-spacing-xl: 32px;
+    --nsn-uif-redwood-spacing-2-x: 7px;
+    --nsn-uif-redwood-spacing-4-x: 14px;
+    --nsn-uif-redwood-spacing-9-x: 31.5px; /* Button height */
+    --nsn-uif-redwood-size-2-xs: 8px;
+    --nsn-uif-redwood-size-3-xs: 4px;
+    --nsn-uif-redwood-size-s: 16px;
+    --nsn-uif-redwood-size-m: 24px;
+    --nsn-uif-redwood-size-l: 32px;
+    --nsn-uif-redwood-size-xl: 40px;
 
-    /* Colors - Light Theme */
-    --nsn-color-white: rgb(255, 255, 255);
-    --nsn-color-neutral-10: rgb(251, 249, 248);
-    --nsn-color-neutral-20: rgb(245, 244, 242);
-    --nsn-color-neutral-100: rgb(122, 115, 110);
-    --nsn-color-neutral-200: rgb(0, 0, 0);
+    /* Colors (Light Theme - Core Neutrals, Brand, Text, Border, Overlay) */
+    --nsn-uif-redwood-color-light-neutral-0: rgb(255, 255, 255); /* White */
+    --nsn-uif-redwood-color-light-neutral-10: rgb(251, 249, 248); /* Off-white background */
+    --nsn-uif-redwood-color-light-neutral-20: rgb(245, 244, 242); /* Light grey background */
+    --nsn-uif-redwood-color-light-neutral-30: rgb(241, 239, 237); /* Slightly darker grey background */
+    --nsn-uif-redwood-color-light-neutral-100: rgb(122, 115, 110); /* Medium grey */
+    --nsn-uif-redwood-color-light-neutral-200: rgb(0, 0, 0); /* Black */
 
-    --nsn-color-brand-100: rgb(34, 126, 158);
-    --nsn-color-brand-120: rgb(54, 103, 125);
-    --nsn-color-brand-130: rgb(50, 92, 114);
+    --nsn-uif-redwood-color-light-brand-100: rgb(34, 126, 158); /* Primary brand color (blue) */
+    --nsn-uif-redwood-color-light-brand-120: rgb(54, 103, 125); /* Darker brand blue for primary buttons */
+    --nsn-uif-redwood-color-light-brand-130: rgb(50, 92, 114); /* Even darker brand blue for headers */
 
-    --nsn-color-text-primary: rgb(22, 21, 19);
-    --nsn-color-text-secondary: rgba(22, 21, 19, 0.7);
-    --nsn-color-text-disabled: rgba(22, 21, 19, 0.4);
-    --nsn-color-text-inverse: rgb(255, 255, 255);
-    --nsn-color-text-link: rgb(54, 103, 125);
-    --nsn-color-text-danger: rgb(179, 49, 31);
+    --nsn-uif-redwood-color-light-text-primary: rgb(22, 21, 19); /* Dark text */
+    --nsn-uif-redwood-color-light-text-secondary: rgba(22, 21, 19, 0.7); /* Lighter text */
+    --nsn-uif-redwood-color-light-text-disabled: rgba(22, 21, 19, 0.4);
+    --nsn-uif-redwood-color-light-text-inverse: rgb(255, 255, 255); /* White text for dark backgrounds */
+    --nsn-uif-redwood-color-light-text-link: rgb(54, 103, 125); /* Blue link text */
+    --nsn-uif-redwood-color-light-text-danger: rgb(179, 49, 31); /* Red for errors/danger */
 
-    --nsn-color-border-enabled: rgba(22, 21, 19, 0.5);
-    --nsn-color-border-disabled: rgba(22, 21, 19, 0.2);
-    --nsn-color-border-divider: rgba(22, 21, 19, 0.12);
-    --nsn-color-border-selected: rgb(34, 126, 158);
+    --nsn-uif-redwood-color-light-border-enabled: rgba(22, 21, 19, 0.5); /* General border color */
+    --nsn-uif-redwood-color-light-border-disabled: rgba(22, 21, 19, 0.2);
+    --nsn-uif-redwood-color-light-border-divider: rgba(22, 21, 19, 0.12); /* Light divider lines */
+    --nsn-uif-redwood-color-light-border-selected: rgb(34, 126, 158); /* Border for selected/focused elements */
+    --nsn-uif-redwood-color-light-border-keyboard-focus: rgb(22, 21, 19); /* Keyboard focus border */
 
-    --nsn-color-overlay-hover: rgba(22, 21, 19, 0.08);
-    --nsn-color-overlay-active: rgba(22, 21, 19, 0.16);
-    --nsn-color-overlay-scrim: rgba(22, 21, 19, 0.5);
+    --nsn-uif-redwood-color-light-overlay-hover: rgba(22, 21, 19, 0.08); /* Light hover overlay */
+    --nsn-uif-redwood-color-light-overlay-active: rgba(22, 21, 19, 0.16); /* Light active overlay */
+    --nsn-uif-redwood-color-light-overlay-scrim: rgba(22, 21, 19, 0.4); /* Modal/popup background scrim */
 
-    --nsn-color-surface-selected: rgb(231, 242, 245);
-    --nsn-color-surface-disabled: rgba(22, 21, 19, 0.04);
+    --nsn-uif-redwood-color-light-surface-selected: rgb(231, 242, 245); /* Selected surface color */
+    --nsn-uif-redwood-color-light-surface-disabled: rgba(22, 21, 19, 0.04);
+    --nsn-uif-redwood-color-light-surface-info-low: rgb(246, 250, 252); /* Light info background */
+    --nsn-uif-redwood-color-light-surface-danger-low: rgb(255, 248, 247); /* Light danger background */
 
-    /* Typography */
-    --nsn-font-size-xs: 12px;
-    --nsn-font-size-sm: 14px;
-    --nsn-font-size-md: 16px;
-    --nsn-font-size-lg: 18px;
-    --nsn-font-size-xl: 20px;
-    --nsn-font-size-heading-sm: 24px;
+    /* Font Sizes */
+    --nsn-uif-redwood-font-size-body-xs: 12px;
+    --nsn-uif-redwood-font-size-body-sm: 14px;
+    --nsn-uif-redwood-font-size-body-md: 16px;
+    --nsn-uif-redwood-font-size-body-lg: 18px;
+    --nsn-uif-redwood-font-size-body-xl: 20px;
+    --nsn-uif-redwood-font-size-heading-sm: 24px;
+    --nsn-uif-redwood-font-size-heading-md: 28px;
 
-    --nsn-font-weight-regular: 400;
-    --nsn-font-weight-semibold: 600;
-    --nsn-font-weight-bold: 700;
+    /* Font Weights */
+    --nsn-uif-redwood-font-weight-regular: 400;
+    --nsn-uif-redwood-font-weight-semi-bold: 600;
+    --nsn-uif-redwood-font-weight-bold: 700;
 
-    /* Border Radius */
-    --nsn-border-radius-sm: 4px;
-    --nsn-border-radius-md: 6px;
+    /* Border Radii */
+    --nsn-uif-redwood-border-rounded-corners-mid: 4px;
+    --nsn-uif-redwood-border-rounded-corners: 6px;
 
     /* Shadows */
-    --nsn-shadow-modal: 0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08);
-    --nsn-shadow-button: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --nsn-uif-redwood-shadow-small: 0 4px 8px 0 rgba(0, 0, 0, 0.16);
+    --nsn-uif-redwood-shadow-medium: 0 6px 12px 0px rgba(0, 0, 0, 0.2);
+
+    /* Z-Index for modal to be on top */
+    --nsn-uif-redwood-z-index-top-most: 1500; /* Increased for custom use */
 }
 
-/* Base Styles */
-.ains-container {
-    font-family: 'Oracle Sans', 'Helvetica Neue', Arial, sans-serif;
-    font-size: var(--nsn-font-size-sm);
-    color: var(--nsn-color-text-primary);
-    line-height: 1.5;
+html, body {
+    font-family: 'Oracle Sans', 'Helvetica Neue', sans-serif;
+    font-size: var(--nsn-uif-redwood-font-size-body-sm);
+    font-weight: var(--nsn-uif-redwood-font-weight-regular);
+    color: var(--nsn-uif-redwood-color-light-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    padding: 0;
 }
 
-/* Modal Components */
-.ains-modal-overlay {
+/* Modal Window */
+.my-app-modal-backdrop {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: var(--nsn-color-overlay-scrim);
+    background-color: var(--nsn-uif-redwood-color-light-overlay-scrim);
     display: flex;
-    align-items: center;
     justify-content: center;
-    z-index: 10000;
-    animation: fadeIn 0.2s ease-out;
+    align-items: center;
+    z-index: var(--nsn-uif-redwood-z-index-top-most);
 }
 
-.ains-modal {
-    background: var(--nsn-color-white);
-    border-radius: var(--nsn-border-radius-md);
-    box-shadow: var(--nsn-shadow-modal);
-    width: 90%;
-    max-width: 900px;
-    max-height: 85vh;
+.my-app-modal-dialog {
+    background-color: var(--nsn-uif-redwood-color-light-neutral-0);
+    border: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
+    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+    box-shadow: var(--nsn-uif-redwood-shadow-medium); /* Stronger shadow for modals */
+    overflow: hidden;
+    min-width: 350px;
+    max-width: 90%;
+    max-height: 90%;
     display: flex;
     flex-direction: column;
-    animation: slideIn 0.3s ease-out;
 }
 
-.ains-modal-header {
-    background: var(--nsn-color-brand-130);
-    color: var(--nsn-color-text-inverse);
-    padding: var(--nsn-spacing-md);
-    border-radius: var(--nsn-border-radius-md) var(--nsn-border-radius-md) 0 0;
+.my-app-modal-header {
+    background-color: var(--nsn-uif-redwood-color-light-brand-130);
+    padding: var(--nsn-uif-redwood-size-2-xs) var(--nsn-uif-redwood-size-s);
+    font-size: var(--nsn-uif-redwood-font-size-body-md);
+    font-weight: var(--nsn-uif-redwood-font-weight-bold);
+    color: var(--nsn-uif-redwood-color-light-text-inverse);
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
-.ains-modal-title {
-    font-size: var(--nsn-font-size-lg);
-    font-weight: var(--nsn-font-weight-semibold);
-    margin: 0;
-}
-
-.ains-modal-close {
+.my-app-modal-header .close-button {
     background: none;
     border: none;
-    color: var(--nsn-color-text-inverse);
-    font-size: 24px;
+    color: var(--nsn-uif-redwood-color-light-text-inverse);
+    font-size: var(--nsn-uif-redwood-font-size-body-lg); /* Adjust for 'x' icon */
     cursor: pointer;
-    padding: var(--nsn-spacing-xs);
-    border-radius: var(--nsn-border-radius-sm);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
+    padding: var(--nsn-uif-redwood-size-3-xs);
+    border-radius: var(--nsn-uif-redwood-border-rounded-corners-mid);
+    line-height: 1; /* For cleaner 'x' positioning */
 }
 
-.ains-modal-close:hover {
-    background: rgba(255, 255, 255, 0.1);
+.my-app-modal-header .close-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+.my-app-modal-header .close-button:focus-visible {
+    outline: 1px dashed var(--nsn-uif-redwood-color-light-text-inverse);
+    outline-offset: 2px;
 }
 
-.ains-modal-body {
-    padding: var(--nsn-spacing-md);
-    flex: 1;
+.my-app-modal-body {
+    padding: var(--nsn-uif-redwood-size-s);
+    flex-grow: 1;
     overflow-y: auto;
+    color: var(--nsn-uif-redwood-color-light-text-primary);
 }
 
-.ains-modal-footer {
-    padding: var(--nsn-spacing-md);
-    border-top: 1px solid var(--nsn-color-border-divider);
+.my-app-modal-footer {
     display: flex;
     justify-content: flex-end;
-    gap: var(--nsn-spacing-md);
+    padding: var(--nsn-uif-redwood-size-s);
+    border-top: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
+    gap: var(--nsn-uif-redwood-size-s);
 }
 
-/* Button Components */
-.ains-btn {
+/* Buttons */
+.my-app-button {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    padding: 0 var(--nsn-spacing-md);
-    height: 36px;
-    border-radius: var(--nsn-border-radius-sm);
-    font-size: var(--nsn-font-size-sm);
-    font-weight: var(--nsn-font-weight-semibold);
-    border: 1px solid transparent;
+    height: var(--nsn-uif-redwood-spacing-9-x);
+    padding: 0 var(--nsn-uif-redwood-spacing-4-x);
+    font-size: var(--nsn-uif-redwood-font-size-body-sm);
+    font-weight: var(--nsn-uif-redwood-font-weight-semi-bold);
+    border-radius: var(--nsn-uif-redwood-border-rounded-corners-mid);
     cursor: pointer;
-    text-decoration: none;
+    border: 1px solid var(--nsn-uif-redwood-color-light-border-enabled);
+    background-color: transparent;
     white-space: nowrap;
-    transition: all 0.2s ease;
-    box-shadow: var(--nsn-shadow-button);
+    text-decoration: none;
+    color: var(--nsn-uif-redwood-color-light-text-primary);
+    fill: var(--nsn-uif-redwood-color-light-text-primary);
 }
 
-.ains-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+.my-app-button:hover {
+    background-color: var(--nsn-uif-redwood-color-light-overlay-hover);
 }
 
-.ains-btn-primary {
-    background: var(--nsn-color-brand-120);
-    color: var(--nsn-color-text-inverse);
-    border-color: var(--nsn-color-brand-120);
+.my-app-button:active {
+    background-color: var(--nsn-uif-redwood-color-light-overlay-active);
 }
 
-.ains-btn-primary:hover:not(:disabled) {
-    background: var(--nsn-color-brand-100);
-    border-color: var(--nsn-color-brand-100);
+.my-app-button:focus-visible {
+    outline: 1px dashed var(--nsn-uif-redwood-color-light-border-keyboard-focus);
+    outline-offset: 2px;
 }
 
-.ains-btn-secondary {
-    background: var(--nsn-color-white);
-    color: var(--nsn-color-text-primary);
-    border-color: var(--nsn-color-border-enabled);
+.my-app-button-primary {
+    background-color: var(--nsn-uif-redwood-color-light-brand-120);
+    border-color: var(--nsn-uif-redwood-color-light-brand-120);
+    color: var(--nsn-uif-redwood-color-light-text-inverse);
+    fill: var(--nsn-uif-redwood-color-light-text-inverse);
 }
 
-.ains-btn-secondary:hover:not(:disabled) {
-    background: var(--nsn-color-overlay-hover);
+.my-app-button-primary:hover {
+    background-color: var(--nsn-uif-redwood-color-light-brand-100);
+    border-color: var(--nsn-uif-redwood-color-light-brand-100);
 }
 
-.ains-btn-danger {
-    background: var(--nsn-color-text-danger);
-    color: var(--nsn-color-text-inverse);
-    border-color: var(--nsn-color-text-danger);
+.my-app-button-primary:active {
+    background-color: var(--nsn-uif-redwood-color-light-brand-130);
+    border-color: var(--nsn-uif-redwood-color-light-brand-130);
 }
 
-.ains-btn-sm {
-    height: 28px;
-    padding: 0 var(--nsn-spacing-sm);
-    font-size: var(--nsn-font-size-xs);
+.my-app-button:disabled,
+.my-app-button-primary:disabled {
+    background-color: var(--nsn-uif-redwood-color-light-surface-disabled);
+    border-color: var(--nsn-uif-redwood-color-light-border-disabled);
+    color: var(--nsn-uif-redwood-color-light-text-disabled);
+    fill: var(--nsn-uif-redwood-color-light-text-disabled);
+    cursor: default;
 }
 
-/* Table Components */
-.ains-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: var(--nsn-color-white);
-    border-radius: var(--nsn-border-radius-md);
-    overflow: hidden;
-    border: 1px solid var(--nsn-color-border-divider);
+/* Headers (Page Titles) */
+.my-app-page-header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--nsn-uif-redwood-size-xs);
+    padding: var(--nsn-uif-redwood-size-s) var(--nsn-uif-redwood-size-m);
+    background-color: var(--nsn-uif-redwood-color-light-neutral-20);
+    border-bottom: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
 }
 
-.ains-table-container {
-    max-height: 400px;
-    overflow-y: auto;
-    border: 1px solid var(--nsn-color-border-divider);
-    border-radius: var(--nsn-border-radius-md);
-}
-
-.ains-table th {
-    background: var(--nsn-color-neutral-20);
-    padding: var(--nsn-spacing-sm) var(--nsn-spacing-md);
-    text-align: left;
-    font-weight: var(--nsn-font-weight-semibold);
-    border-bottom: 1px solid var(--nsn-color-border-divider);
-    position: sticky;
-    top: 0;
-    z-index: 1;
-}
-
-.ains-table td {
-    padding: var(--nsn-spacing-sm) var(--nsn-spacing-md);
-    border-bottom: 1px solid var(--nsn-color-border-divider);
-    vertical-align: middle;
-}
-
-.ains-table tbody tr:hover {
-    background: var(--nsn-color-overlay-hover);
-}
-
-.ains-table tbody tr.selected {
-    background: var(--nsn-color-surface-selected);
-}
-
-/* Form Components */
-.ains-form-group {
-    margin-bottom: var(--nsn-spacing-md);
-}
-
-.ains-label {
-    display: block;
-    margin-bottom: var(--nsn-spacing-xs);
-    font-weight: var(--nsn-font-weight-semibold);
-    color: var(--nsn-color-text-primary);
-}
-
-.ains-checkbox {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    cursor: pointer;
-    user-select: none;
-}
-
-.ains-checkbox input {
+.my-app-page-header h1 {
+    font-size: var(--nsn-uif-redwood-font-size-heading-sm);
+    line-height: var(--nsn-uif-redwood-font-size-heading-md);
+    font-weight: var(--nsn-uif-redwood-font-weight-bold);
     margin: 0;
-    margin-right: var(--nsn-spacing-xs);
-    transform: scale(1.2);
+    color: var(--nsn-uif-redwood-color-light-text-primary);
 }
 
-/* Utility Classes */
-.ains-text-center { text-align: center; }
-.ains-text-right { text-align: right; }
-.ains-text-muted { color: var(--nsn-color-text-secondary); }
-.ains-text-danger { color: var(--nsn-color-text-danger); }
-
-.ains-mb-0 { margin-bottom: 0; }
-.ains-mb-sm { margin-bottom: var(--nsn-spacing-sm); }
-.ains-mb-md { margin-bottom: var(--nsn-spacing-md); }
-.ains-mb-lg { margin-bottom: var(--nsn-spacing-lg); }
-
-.ains-mt-0 { margin-top: 0; }
-.ains-mt-sm { margin-top: var(--nsn-spacing-sm); }
-.ains-mt-md { margin-top: var(--nsn-spacing-md); }
-.ains-mt-lg { margin-top: var(--nsn-spacing-lg); }
-
-.ains-p-0 { padding: 0; }
-.ains-p-sm { padding: var(--nsn-spacing-sm); }
-.ains-p-md { padding: var(--nsn-spacing-md); }
-.ains-p-lg { padding: var(--nsn-spacing-lg); }
-
-.ains-flex { display: flex; }
-.ains-flex-column { flex-direction: column; }
-.ains-flex-wrap { flex-wrap: wrap; }
-.ains-justify-center { justify-content: center; }
-.ains-justify-between { justify-content: space-between; }
-.ains-align-center { align-items: center; }
-
-.ains-gap-xs { gap: var(--nsn-spacing-xs); }
-.ains-gap-sm { gap: var(--nsn-spacing-sm); }
-.ains-gap-md { gap: var(--nsn-spacing-md); }
-
-/* Animations */
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+.my-app-page-header .subtitle {
+    font-size: var(--nsn-uif-redwood-font-size-body-md);
+    color: var(--nsn-uif-redwood-color-light-text-secondary);
+    margin: 0;
 }
 
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-20px) scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
+/* Sidebar */
+.my-app-sidebar {
+    width: 220px; /* Adjust width as needed */
+    background-color: var(--nsn-uif-redwood-color-light-neutral-0);
+    border-right: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
+    padding: var(--nsn-uif-redwood-size-s);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0; /* Prevent it from shrinking in a flex container */
+    overflow-y: auto; /* For scrollable content */
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    .ains-modal {
-        width: 95%;
-        max-height: 90vh;
-    }
+.my-app-sidebar-header {
+    font-size: var(--nsn-uif-redwood-font-size-body-lg);
+    font-weight: var(--nsn-uif-redwood-font-weight-bold);
+    margin-bottom: var(--nsn-uif-redwood-size-s);
+    color: var(--nsn-uif-redwood-color-light-text-primary);
+}
 
-    .ains-modal-header,
-    .ains-modal-body,
-    .ains-modal-footer {
-        padding: var(--nsn-spacing-sm);
-    }
+.my-app-sidebar-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
 
-    .ains-table th,
-    .ains-table td {
-        padding: var(--nsn-spacing-xs) var(--nsn-spacing-sm);
-        font-size: var(--nsn-font-size-xs);
-    }
+.my-app-sidebar-nav li {
+    margin-bottom: var(--nsn-uif-redwood-size-3-xs); /* Space between items */
+}
+
+.my-app-sidebar-nav li a {
+    display: block;
+    padding: var(--nsn-uif-redwood-size-2-xs) var(--nsn-uif-redwood-size-s);
+    text-decoration: none;
+    color: var(--nsn-uif-redwood-color-light-text-primary);
+    font-size: var(--nsn-uif-redwood-font-size-body-sm);
+    border-radius: var(--nsn-uif-redwood-border-rounded-corners-mid);
+    transition: background-color 0.1s ease-in-out;
+}
+
+.my-app-sidebar-nav li a:hover {
+    background-color: var(--nsn-uif-redwood-color-light-overlay-hover);
+}
+
+.my-app-sidebar-nav li a.active {
+    background-color: var(--nsn-uif-redwood-color-light-surface-selected);
+    color: var(--nsn-uif-redwood-color-light-text-link);
+    font-weight: var(--nsn-uif-redwood-font-weight-semi-bold);
+}
+
+/* Slides (for basic carousel/tab-like content switching) */
+.my-app-slides-wrapper {
+    overflow: hidden; /* Important for preventing horizontal scrollbars on parent */
+    flex-grow: 1; /* Allow it to take available space */
+    display: flex; /* Make it a flex container for content */
+    flex-direction: column;
+}
+
+.my-app-slides-nav {
+    display: flex;
+    border-bottom: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
+    background-color: var(--nsn-uif-redwood-color-light-neutral-0);
+    padding: 0 var(--nsn-uif-redwood-size-m); /* Consistent padding with header */
+    overflow-x: auto; /* If tabs exceed width */
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+.my-app-slides-nav-item {
+    padding: var(--nsn-uif-redwood-size-s) var(--nsn-uif-redwood-size-m);
+    cursor: pointer;
+    font-size: var(--nsn-uif-redwood-font-size-body-sm);
+    font-weight: var(--nsn-uif-redwood-font-weight-semi-bold);
+    color: var(--nsn-uif-redwood-color-light-text-secondary);
+    text-decoration: none;
+    white-space: nowrap; /* Prevent wrapping */
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease-in-out;
+}
+
+.my-app-slides-nav-item:hover {
+    color: var(--nsn-uif-redwood-color-light-text-primary);
+}
+
+.my-app-slides-nav-item.active {
+    border-bottom-color: var(--nsn-uif-redwood-color-light-brand-100);
+    color: var(--nsn-uif-redwood-color-light-text-primary);
+}
+
+.my-app-slides-content {
+    display: flex;
+    flex-grow: 1;
+    min-height: 0; /* Allow content to scroll */
+    transition: transform 0.3s ease-in-out;
+    /* This will be controlled by JS to move between slides */
+    /* Example: transform: translateX(-100%); for the second slide */
+}
+
+.my-app-slide {
+    flex: 0 0 100%; /* Each slide takes full width */
+    padding: var(--nsn-uif-redwood-size-m);
+    background-color: var(--nsn-uif-redwood-color-light-neutral-10); /* Different background for slide content */
+    overflow-y: auto; /* Allow content within slide to scroll */
+    min-height: 1px; /* Required for some browsers to properly calculate flex item height */
+}
+
+/* General Input Fields */
+.my-app-input-text {
+    appearance: none;
+    border: 1px solid var(--nsn-uif-redwood-color-light-border-enabled);
+    padding: var(--nsn-uif-redwood-size-2-xs);
+    height: 26px;
+    font-family: inherit;
+    font-size: var(--nsn-uif-redwood-font-size-body-sm);
+    color: var(--nsn-uif-redwood-color-light-text-primary);
+    border-radius: 3px;
+    background-color: var(--nsn-uif-redwood-color-light-neutral-0);
+    max-width: 800px; /* Consistent with original */
+}
+
+.my-app-input-text:focus {
+    outline: 2px solid var(--nsn-uif-redwood-color-light-border-selected);
+    outline-offset: -1px;
+}
+
+.my-app-input-text:disabled {
+    color: var(--nsn-uif-redwood-color-light-text-disabled) !important;
+    background-color: transparent;
+    border-color: var(--nsn-uif-redwood-color-light-border-disabled) !important;
+}
+
+/* Links */
+.my-app-link {
+    text-decoration: none;
+    color: var(--nsn-uif-redwood-color-light-text-link);
+}
+
+.my-app-link:hover {
+    text-decoration: underline;
+}
+
+/* Basic Table Styling */
+.my-app-table {
+    border-collapse: collapse;
+    width: 100%;
+    background-color: var(--nsn-uif-redwood-color-light-neutral-0);
+}
+
+.my-app-table th {
+    font-weight: var(--nsn-uif-redwood-font-weight-semi-bold);
+    text-align: left;
+    border-bottom: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
+    padding: var(--nsn-uif-redwood-size-3-xs) var(--nsn-uif-redwood-size-s);
+    min-height: 28px;
+    color: var(--nsn-uif-redwood-color-light-text-primary);
+    background-color: var(--nsn-uif-redwood-color-light-neutral-10); /* Subtle header background */
+}
+
+.my-app-table td {
+    border-bottom: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
+    padding: var(--nsn-uif-redwood-size-3-xs) var(--nsn-uif-redwood-size-s);
+    min-height: 28px;
+    color: var(--nsn-uif-redwood-color-light-text-primary);
+}
+
+.my-app-table tbody tr:hover {
+    background-color: var(--nsn-uif-redwood-color-light-overlay-hover);
+}
+
+/* Error/Info Messages (simple version) */
+.my-app-message {
+    padding: var(--nsn-uif-redwood-size-s);
+    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+    margin-bottom: var(--nsn-uif-redwood-size-s);
+}
+
+.my-app-message-info {
+    background-color: var(--nsn-uif-redwood-color-light-surface-info-low);
+    color: var(--nsn-uif-redwood-color-light-text-link); /* Use link color for info text */
+}
+
+.my-app-message-error {
+    background-color: var(--nsn-uif-redwood-color-light-surface-danger-low);
+    color: var(--nsn-uif-redwood-color-light-text-danger);
 }
