@@ -4,8 +4,8 @@
  * @NModuleScope SameAccount
  * @description AI NS|CS|Expense Report Import - Simple expense import functionality
  */
-define(['N/currentRecord', 'N/https', 'N/url', '../Libraries/AINS_LIB_Common'],
-    function(currentRecord, https, url, commonLib) {
+define(['N/currentRecord', 'N/https', 'N/url', 'N/file', '../Libraries/AINS_LIB_Common'],
+    function(currentRecord, https, url, file, commonLib) {
 
     function pageInit(context) {
         // Only add button in create/edit mode
@@ -235,15 +235,37 @@ define(['N/currentRecord', 'N/https', 'N/url', '../Libraries/AINS_LIB_Common'],
                     });
                 }
 
+                                                                // Set file attachment using filename (based on XML analysis)
                 if (expense.fileId) {
-                    rec.setCurrentSublistValue({
-                        sublistId: 'expense',
-                        fieldId: 'expmediaitem',
-                        value: expense.fileId
-                    });
+                    try {
+                        const fileObj = file.load({ id: parseInt(expense.fileId) });
+                        rec.setCurrentSublistValue({
+                            sublistId: 'expense',
+                            fieldId: 'expmediaitem',
+                            value: fileObj.name
+                        });
+                        console.log('File attachment set:', fileObj.name);
+                    } catch (error) {
+                        console.error('Could not set file attachment:', error.message);
+                    }
                 }
 
                 rec.commitLine({ sublistId: 'expense' });
+
+                                                // Verify file attachment was committed
+                if (expense.fileId) {
+                    try {
+                        const attachmentValue = rec.getSublistValue({
+                            sublistId: 'expense',
+                            fieldId: 'expmediaitem',
+                            line: addedCount
+                        });
+                        console.log('File attachment committed:', attachmentValue ? '✅ Success' : '❌ Failed');
+                    } catch (error) {
+                        console.error('Could not verify file attachment');
+                    }
+                }
+
                 addedCount++;
             });
 
