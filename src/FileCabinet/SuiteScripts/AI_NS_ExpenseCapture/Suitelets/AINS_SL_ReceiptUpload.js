@@ -5,11 +5,34 @@
  * @description Receipt upload Suitelet for AI NS Expense Capture system
  */
 
-define(['N/ui/serverWidget', 'N/file', 'N/record', 'N/runtime', 'N/url', 'N/redirect', 'N/encode', 'N/task', 'N/search',
+define(['N/ui/serverWidget', 'N/file', 'N/record', 'N/runtime', 'N/url', 'N/redirect', 'N/encode', 'N/task', 'N/search', 'N/config',
         '../Libraries/AINS_LIB_Common', '../Libraries/AINS_LIB_OCIIntegration'],
-function(ui, file, record, runtime, url, redirect, encode, task, search, commonLib, ociLib) {
+function(ui, file, record, runtime, url, redirect, encode, task, search, config, commonLib, ociLib) {
 
     const CONSTANTS = commonLib.CONSTANTS;
+
+    /**
+     * Check if the Expense Management feature is enabled
+     * @returns {boolean} True if fcexpense feature is enabled
+     */
+    function isExpenseFeatureEnabled() {
+        try {
+            const featureConfig = config.load({
+                type: config.Type.FEATURES
+            });
+
+            return featureConfig.getValue({
+                fieldId: 'fcexpense'
+            });
+        } catch (error) {
+            commonLib.logOperation('expense_feature_check_error', {
+                error: error.message
+            }, 'error');
+
+            // Default to false if we can't check the feature
+            return false;
+        }
+    }
 
     /**
      * Definition of the Suitelet script trigger point.
@@ -95,10 +118,12 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
         function renderUploadForm(context) {
         const currentUser = commonLib.getCurrentUser();
         const isEmployeeCenter = commonLib.isEmployeeCenterRole();
+        const isExpenseEnabled = isExpenseFeatureEnabled();
 
         commonLib.logOperation('render_upload_form', {
             userId: currentUser.id,
-            isEmployeeCenter: isEmployeeCenter
+            isEmployeeCenter: isEmployeeCenter,
+            isExpenseEnabled: isExpenseEnabled
         });
 
         // Create NetSuite form (keeps toolbar) with clean content
@@ -109,8 +134,12 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
         // Add client script
         form.clientScriptModulePath = '../ClientScripts/AINS_CS_ReceiptUpload.js';
 
-        // Add the clean upload interface
-        renderCleanUploadInterface(form, currentUser);
+        // Add the clean upload interface based on feature availability
+        if (isExpenseEnabled) {
+            renderExpenseUploadInterface(form, currentUser);
+        } else {
+            renderRegularFileUploadInterface(form, currentUser);
+        }
 
         // Hidden user ID for processing
         form.addField({
@@ -121,21 +150,30 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
             displayType: ui.FieldDisplayType.HIDDEN
         }).defaultValue = currentUser.id;
 
+        // Hidden field to indicate feature status
+        form.addField({
+            id: 'expense_feature_enabled',
+            type: ui.FieldType.TEXT,
+            label: 'Expense Feature'
+        }).updateDisplayType({
+            displayType: ui.FieldDisplayType.HIDDEN
+        }).defaultValue = isExpenseEnabled;
+
         context.response.writePage(form);
     }
 
-        /**
-     * Render clean upload interface within NetSuite form
+    /**
+     * Render expense upload interface when expense feature is enabled
      * @param {Form} form - NetSuite form object
      * @param {Object} currentUser - Current user details
      */
-    function renderCleanUploadInterface(form, currentUser) {
+    function renderExpenseUploadInterface(form, currentUser) {
         const accountId = runtime.accountId;
         const baseUrl = `https://${accountId}.app.netsuite.com`;
         const expenseUploadUrl = `${baseUrl}/app/common/media/expensereportmediaitem.nl?target=expense:expmediaitem&label=AI+Receipt+Processing&reportOwner=${currentUser.id}&entity=${currentUser.id}`;
 
         // Log for debugging
-        commonLib.logOperation('debug_url_construction', {
+        commonLib.logOperation('debug_expense_url_construction', {
             accountId: accountId,
             currentUserId: currentUser.id,
             baseUrl: baseUrl,
@@ -501,43 +539,31 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
     }
 
     /**
-     * Render upload interface (Step 1)
-     * @param {Form} form - Form object
+     * Render regular file upload interface when expense feature is disabled
+     * @param {Form} form - NetSuite form object
      * @param {Object} currentUser - Current user details
      */
-    function renderUploadInterface(form, currentUser) {
-        // Add iframe for expense media upload
-        const iframeUploadField = form.addField({
-            id: 'expense_upload_iframe',
+    function renderRegularFileUploadInterface(form, currentUser) {
+        const accountId = runtime.accountId;
+        const baseUrl = `https://${accountId}.app.netsuite.com`;
+        const regularUploadUrl = `${baseUrl}/app/common/media/mediaitem.nl?restricttype=&l=T&upload`;
+
+        // Log for debugging
+        commonLib.logOperation('debug_regular_url_construction', {
+            accountId: accountId,
+            currentUserId: currentUser.id,
+            baseUrl: baseUrl,
+            regularUploadUrl: regularUploadUrl
+        });
+
+        // Create single field with all content
+        const uploadField = form.addField({
+            id: 'upload_interface',
             type: ui.FieldType.INLINEHTML,
             label: 'Receipt Upload'
         });
 
-                // Get proper base URL - use runtime.accountId for reliable URL construction
-        const accountId = runtime.accountId;
-        const baseUrl = `https://${accountId}.app.netsuite.com`;
-
-        // Simple expense upload URL without custom return URL (avoid page not found)
-        const expenseUploadUrl = `${baseUrl}/app/common/media/expensereportmediaitem.nl?target=expense:expmediaitem&label=AI+Receipt+Processing&reportOwner=${currentUser.id}&entity=${currentUser.id}`;
-
-        // Log for debugging
-        commonLib.logOperation('debug_url_construction', {
-            accountId: accountId,
-            currentUserId: currentUser.id,
-            baseUrl: baseUrl,
-            expenseUploadUrl: expenseUploadUrl
-        });
-
-                // Add link to CSS file
-        form.addField({
-            id: 'custom_css_link',
-            type: ui.FieldType.INLINEHTML,
-            label: 'Styles'
-        }).updateDisplayType({
-            displayType: ui.FieldDisplayType.HIDDEN
-        }).defaultValue = '<link rel="stylesheet" type="text/css" href="../Libraries/AINS_LIB_Styles.css">';
-
-        iframeUploadField.defaultValue = `
+        uploadField.defaultValue = `
             <style>
                 :root {
                     --nsn-uif-redwood-color-light-neutral-0: rgb(255, 255, 255);
@@ -561,6 +587,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
                     padding: var(--nsn-uif-redwood-size-m);
                     margin: var(--nsn-uif-redwood-size-s) 0;
                     text-align: center;
+                    box-shadow: var(--nsn-uif-redwood-shadow-small);
                 }
 
                 .upload-title {
@@ -630,6 +657,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
                     background-color: var(--nsn-uif-redwood-color-light-neutral-10);
                     border-radius: var(--nsn-uif-redwood-border-rounded-corners);
                     border: 1px dashed var(--nsn-uif-redwood-color-light-brand-100);
+                    text-align: center;
                 }
 
                 .process-btn {
@@ -648,13 +676,65 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
                 .process-btn:hover {
                     background-color: var(--nsn-uif-redwood-color-light-brand-120);
                 }
+
+                .my-app-modal-backdrop {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(22, 21, 19, 0.4);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 1500;
+                }
+
+                .my-app-modal-dialog {
+                    background-color: var(--nsn-uif-redwood-color-light-neutral-0);
+                    border: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                    box-shadow: 0 6px 12px 0px rgba(0, 0, 0, 0.2);
+                    overflow: hidden;
+                    min-width: 350px;
+                    max-width: 90%;
+                    max-height: 90%;
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .my-app-modal-header {
+                    background-color: var(--nsn-uif-redwood-color-light-brand-120);
+                    padding: 8px var(--nsn-uif-redwood-size-s);
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: white;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+
+                .close-button {
+                    background: none;
+                    border: none;
+                    color: white;
+                    font-size: 18px;
+                    cursor: pointer;
+                    padding: 4px;
+                    border-radius: 4px;
+                    line-height: 1;
+                }
+
+                .close-button:hover {
+                    background-color: rgba(255, 255, 255, 0.1);
+                }
             </style>
 
             <div class="upload-container">
                 <div class="upload-title">AI Receipt Processing</div>
                 <div class="upload-subtitle">Upload your receipt for automatic expense data extraction</div>
 
-                <button type="button" id="btn_choose_file" onclick="openExpenseUpload()" class="choose-file-btn">
+                <button type="button" id="btn_choose_file" onclick="openRegularUpload()" class="choose-file-btn">
                     📁 Choose File
                 </button>
 
@@ -665,9 +745,6 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
                 </div>
             </div>
 
-            <!-- Hidden iframe for expense upload -->
-            <iframe id="expense_upload_iframe" src="" style="display: none; width: 100%; height: 600px; border: 1px solid #ccc; border-radius: 5px;"></iframe>
-
             <!-- Modal overlay -->
             <div id="upload_modal" class="my-app-modal-backdrop" style="display: none;">
                 <div class="my-app-modal-dialog" style="width: 90%; max-width: 800px; height: 80%; max-height: 600px;">
@@ -675,16 +752,16 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
                         <span>📸 Upload Receipt</span>
                         <button onclick="closeUploadModal()" class="close-button">×</button>
                     </div>
-                    <iframe id="modal_iframe" src="${expenseUploadUrl}" style="width: 100%; height: calc(100% - 60px); border: none; background: white;"></iframe>
+                    <iframe id="modal_iframe" src="${regularUploadUrl}" style="width: 100%; height: calc(100% - 60px); border: none; background: white;"></iframe>
                 </div>
             </div>
 
             <script>
-                let uploadedMediaId = null;
+                let uploadedFileId = null;
                 let uploadedFileName = null;
 
-                function openExpenseUpload() {
-                    document.getElementById('upload_modal').style.display = 'block';
+                function openRegularUpload() {
+                    document.getElementById('upload_modal').style.display = 'flex';
                     document.body.style.overflow = 'hidden';
                 }
 
@@ -693,86 +770,45 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
                     document.body.style.overflow = 'auto';
                 }
 
-                                // Listen for messages from the iframe
-                window.addEventListener('message', function(event) {
-                    console.log('Received message:', event);
-
-                    // Check if the message is from NetSuite upload completion
-                    if (event.data && event.data.type === 'expense_upload_complete') {
-                        uploadedMediaId = event.data.mediaId;
-                        uploadedFileName = event.data.fileName;
-
-                        // Show success status with media ID
-                        document.getElementById('file_name_display').textContent = uploadedFileName;
-                        document.getElementById('media_id_display').textContent = uploadedMediaId;
-                        document.getElementById('upload_status').style.display = 'block';
-
-                        // Close modal
-                        closeUploadModal();
-
-                        // Enable process button
-                        enableProcessButton();
-
-                        console.log('Upload completed successfully:', {
-                            mediaId: uploadedMediaId,
-                            fileName: uploadedFileName
-                        });
-                    }
-                });
-
-                                // Monitor iframe URL changes (enhanced monitoring)
-                function monitorIframe() {
+                // Monitor iframe for file upload completion
+                function monitorRegularUpload() {
                     const iframe = document.getElementById('modal_iframe');
                     if (iframe) {
                         try {
                             const iframeUrl = iframe.contentWindow.location.href;
                             console.log('Iframe URL:', iframeUrl);
 
-                            // Check if URL contains optionid (successful upload)
-                            if (iframeUrl.includes('optionid=')) {
+                            // Check for successful upload indicators in the URL
+                            if (iframeUrl.includes('mediaid=') || iframeUrl.includes('id=')) {
                                 const urlParams = new URLSearchParams(iframeUrl.split('?')[1]);
-                                const optionId = urlParams.get('optionid');
-                                const optionName = urlParams.get('optionname');
+                                const fileId = urlParams.get('mediaid') || urlParams.get('id');
+                                const fileName = urlParams.get('filename') || urlParams.get('name') || 'uploaded_receipt';
 
-                                                                if (optionId) {
-                                    uploadedMediaId = optionId;
-                                    uploadedFileName = decodeURIComponent(optionName || 'receipt.pdf');
+                                if (fileId) {
+                                    uploadedFileId = fileId;
+                                    uploadedFileName = decodeURIComponent(fileName);
 
-                                    console.log('Successfully captured expense media:', {
-                                        mediaId: uploadedMediaId,
+                                    console.log('Successfully captured regular file upload:', {
+                                        fileId: uploadedFileId,
                                         fileName: uploadedFileName
                                     });
 
-                                    // Show success status with media ID
                                     document.getElementById('file_name_display').textContent = uploadedFileName;
-                                    document.getElementById('media_id_display').textContent = uploadedMediaId;
+                                    document.getElementById('media_id_display').textContent = uploadedFileId;
                                     document.getElementById('upload_status').style.display = 'block';
 
-                                    // Close modal
                                     closeUploadModal();
-
-                                    // Enable process button
                                     enableProcessButton();
                                 }
                             }
-
-                            // Also check for upload completion pages
-                            if (iframeUrl.includes('addpage.nl') && iframeUrl.includes('whence=')) {
-                                console.log('Upload completed, checking for parameters...');
-                                // Sometimes the success page has different parameter names
-                            }
-
                         } catch (e) {
-                            // Cross-origin restrictions - this is expected for most pages
                             console.log('Cannot access iframe URL due to cross-origin policy (this is normal)');
                         }
                     }
                 }
 
-                // More frequent polling during active upload
-                let monitoringInterval = setInterval(monitorIframe, 1000);
+                let monitoringInterval = setInterval(monitorRegularUpload, 1000);
 
-                // Stop monitoring after 30 minutes to prevent memory leaks
                 setTimeout(function() {
                     if (monitoringInterval) {
                         clearInterval(monitoringInterval);
@@ -780,43 +816,41 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
                     }
                 }, 30 * 60 * 1000);
 
-                                                function enableProcessButton() {
-                    // Add process button if it doesn't exist
+                function enableProcessButton() {
                     if (!document.getElementById('btn_process_receipt')) {
                         const buttonContainer = document.createElement('div');
                         buttonContainer.className = 'process-container';
-                        buttonContainer.style.textAlign = 'center';
 
                         const processButton = document.createElement('button');
                         processButton.id = 'btn_process_receipt';
                         processButton.type = 'button';
                         processButton.className = 'process-btn';
-                        processButton.onclick = processUploadedReceipt;
+                        processButton.onclick = processUploadedFile;
                         processButton.textContent = '🤖 Process Receipt with AI';
 
                         buttonContainer.appendChild(processButton);
 
-                        // Insert after the upload container
                         const uploadContainer = document.querySelector('.upload-container');
                         uploadContainer.parentNode.insertBefore(buttonContainer, uploadContainer.nextSibling);
                     }
                 }
 
-                function processUploadedReceipt() {
-                    if (!uploadedMediaId) {
+                function processUploadedFile() {
+                    if (!uploadedFileId) {
                         alert('No file uploaded. Please choose a file first.');
                         return;
                     }
 
-                    // Submit form with uploaded media ID
-                    const form = document.forms[0];
+                    // Create form and submit for processing
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = window.location.href;
 
-                    // Add hidden inputs for the uploaded media
-                    const mediaIdInput = document.createElement('input');
-                    mediaIdInput.type = 'hidden';
-                    mediaIdInput.name = 'uploaded_media_id';
-                    mediaIdInput.value = uploadedMediaId;
-                    form.appendChild(mediaIdInput);
+                    const fileIdInput = document.createElement('input');
+                    fileIdInput.type = 'hidden';
+                    fileIdInput.name = 'uploaded_file_id';
+                    fileIdInput.value = uploadedFileId;
+                    form.appendChild(fileIdInput);
 
                     const fileNameInput = document.createElement('input');
                     fileNameInput.type = 'hidden';
@@ -827,13 +861,19 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
                     const actionInput = document.createElement('input');
                     actionInput.type = 'hidden';
                     actionInput.name = 'action';
-                    actionInput.value = 'process_expense_media';
+                    actionInput.value = 'process_regular_file';
                     form.appendChild(actionInput);
 
-                    // Show processing message
+                    const userIdInput = document.createElement('input');
+                    userIdInput.type = 'hidden';
+                    userIdInput.name = 'user_id';
+                    userIdInput.value = '${currentUser.id}';
+                    form.appendChild(userIdInput);
+
+                    document.body.appendChild(form);
+
                     showProcessingMessage('Starting AI processing of your receipt...');
 
-                    // Submit form
                     form.submit();
                 }
 
@@ -843,17 +883,14 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
                     overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10001; display: flex; align-items: center; justify-content: center;';
 
                     const messageBox = document.createElement('div');
-                    messageBox.style.cssText = 'background: white; padding: 30px; border-radius: 5px; text-align: center; max-width: 400px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);';
-                    messageBox.innerHTML = '<div style="font-size: 18px; color: #1f4e79; margin-bottom: 15px;">🔄 Processing...</div><div style="margin-bottom: 15px;">' + message + '</div><div style="font-size: 12px; color: #666;">Please wait while we process your receipt.</div>';
+                    messageBox.style.cssText = 'background: white; padding: 30px; border-radius: 6px; text-align: center; max-width: 400px; box-shadow: 0 6px 12px 0px rgba(0, 0, 0, 0.2);';
+                    messageBox.innerHTML = '<div style="font-size: 18px; color: rgb(22, 21, 19); margin-bottom: 15px;">🔄 Processing...</div><div style="margin-bottom: 15px;">' + message + '</div><div style="font-size: 12px; color: rgba(22, 21, 19, 0.7);">Please wait while we process your receipt.</div>';
 
                     overlay.appendChild(messageBox);
                     document.body.appendChild(overlay);
                 }
             </script>
         `;
-
-        // Remove the old file field and submit button
-        // We'll handle submission through JavaScript now
     }
 
     /**
@@ -930,6 +967,15 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
                 return triggerExpenseMediaProcessing(context, mediaId, fileName, userId, trackingId);
             }
 
+            // Handle regular file processing
+            if (action === 'process_regular_file') {
+                const fileId = parameters.uploaded_file_id;
+                const fileName = parameters.uploaded_file_name;
+                const userId = parameters.user_id;
+
+                return triggerRegularFileProcessing(context, fileId, fileName, userId, trackingId);
+            }
+
             // Legacy file upload handling (keep for backward compatibility)
             const files = context.request.files;
             const uploadedFileId = parameters.uploaded_file_id;
@@ -954,68 +1000,25 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
     }
 
     /**
-     * Handle initial file upload (Step 1) - Legacy support
+     * Trigger processing of regular file item
      * @param {Object} context - Request context
-     * @param {string} trackingId - Tracking ID for this operation
-     */
-    function handleFileUpload(context, trackingId) {
-        const parameters = context.request.parameters;
-        const files = context.request.files;
-        const uploadedFile = files.receipt_file;
-
-        commonLib.logOperation('handle_file_upload_start', {
-            trackingId: trackingId,
-            userId: parameters.user_id,
-            hasFile: !!uploadedFile,
-            fileName: uploadedFile ? uploadedFile.name : null
-        });
-
-        // Validate file upload
-        if (!uploadedFile) {
-            throw new Error('No file was uploaded. Please select a receipt file to upload.');
-        }
-
-        // Validate file
-        const validation = validateUploadedFile(uploadedFile);
-        if (!validation.isValid) {
-            throw new Error(validation.message);
-        }
-
-        // Save file using Enhanced File Security pattern
-        const savedFile = saveFileWithEnhancedSecurity(uploadedFile, parameters.user_id);
-
-        commonLib.logOperation('file_upload_success', {
-            trackingId: trackingId,
-            fileId: savedFile.id,
-            fileName: savedFile.name,
-            userId: parameters.user_id
-        });
-
-        // Redirect back to form with file information for processing step
-        return redirectToProcessingStep(context, savedFile.id, savedFile.name);
-    }
-
-    /**
-     * Trigger processing of uploaded file (Step 2)
-     * @param {Object} context - Request context
-     * @param {string} fileId - ID of uploaded file
+     * @param {string} fileId - ID of regular file item
      * @param {string} fileName - Name of uploaded file
+     * @param {string} userId - User ID
      * @param {string} trackingId - Tracking ID for this operation
      */
-    function triggerProcessing(context, fileId, fileName, trackingId) {
-        const parameters = context.request.parameters;
-
-        commonLib.logOperation('trigger_processing_start', {
+    function triggerRegularFileProcessing(context, fileId, fileName, userId, trackingId) {
+        commonLib.logOperation('trigger_regular_file_processing_start', {
             trackingId: trackingId,
             fileId: fileId,
             fileName: fileName,
-            userId: parameters.user_id
+            userId: userId
         });
 
-        // Start Map/Reduce script with file information
-        const mrTaskId = startMapReduceProcessing(fileId, fileName, parameters.user_id, trackingId);
+        // Start Map/Reduce script with regular file information
+        const mrTaskId = startRegularFileProcessing(fileId, fileName, userId, trackingId);
 
-        commonLib.logOperation('processing_triggered', {
+        commonLib.logOperation('regular_file_processing_triggered', {
             trackingId: trackingId,
             fileId: fileId,
             mrTaskId: mrTaskId
@@ -1030,14 +1033,14 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
     }
 
     /**
-     * Start Map/Reduce script to process the file
-     * @param {string} fileId - ID of file to process
+     * Start Map/Reduce script to process the regular file
+     * @param {string} fileId - ID of regular file item to process
      * @param {string} fileName - Name of file
      * @param {string} userId - User ID
      * @param {string} trackingId - Tracking ID
      * @returns {string} Map/Reduce task ID
      */
-    function startMapReduceProcessing(fileId, fileName, userId, trackingId) {
+    function startRegularFileProcessing(fileId, fileName, userId, trackingId) {
         try {
             const mrTask = task.create({
                 taskType: task.TaskType.MAP_REDUCE,
@@ -1047,13 +1050,14 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
                     'custscript_ains_file_id': fileId,
                     'custscript_ains_file_name': fileName,
                     'custscript_ains_user_id': userId,
-                    'custscript_ains_tracking_id': trackingId
+                    'custscript_ains_tracking_id': trackingId,
+                    'custscript_ains_is_regular_file': true  // Flag to indicate regular file
                 }
             });
 
             const taskId = mrTask.submit();
 
-            commonLib.logOperation('mr_task_submitted', {
+            commonLib.logOperation('mr_task_submitted_regular_file', {
                 taskId: taskId,
                 fileId: fileId,
                 fileName: fileName,
@@ -1064,7 +1068,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
             return taskId;
 
         } catch (error) {
-            commonLib.logOperation('mr_task_submission_error', {
+            commonLib.logOperation('mr_task_submission_error_regular_file', {
                 error: error.message,
                 fileId: fileId,
                 trackingId: trackingId
