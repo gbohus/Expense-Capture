@@ -20,6 +20,13 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
     function onRequest(context) {
         try {
             if (context.request.method === 'GET') {
+                // Check for specific actions
+                const action = context.request.parameters.action;
+
+                if (action === 'capture_upload_response') {
+                    return handleUploadResponse(context);
+                }
+
                 return renderUploadForm(context);
             } else if (context.request.method === 'POST') {
                 return processFileUpload(context);
@@ -31,6 +38,53 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
             }, 'error');
 
             return showErrorPage(context, error);
+        }
+    }
+
+    /**
+     * Handle upload response from NetSuite expense media system
+     * @param {Object} context - Request context
+     */
+    function handleUploadResponse(context) {
+        // This handles returns from the expense upload iframe
+        const mediaId = context.request.parameters.optionid;
+        const fileName = context.request.parameters.optionname;
+
+        if (mediaId) {
+            commonLib.logOperation('expense_media_upload_captured', {
+                mediaId: mediaId,
+                fileName: fileName
+            });
+
+            // Send JavaScript to notify parent window
+            const responseHtml = `
+                <script>
+                    if (window.parent && window.parent !== window) {
+                        window.parent.postMessage({
+                            type: 'expense_upload_complete',
+                            mediaId: '${mediaId}',
+                            fileName: '${fileName || 'receipt.pdf'}'
+                        }, '*');
+                    }
+                    window.close();
+                </script>
+            `;
+
+            context.response.write(responseHtml);
+        } else {
+            // Upload cancelled or failed
+            const responseHtml = `
+                <script>
+                    if (window.parent && window.parent !== window) {
+                        window.parent.postMessage({
+                            type: 'expense_upload_cancelled'
+                        }, '*');
+                    }
+                    window.close();
+                </script>
+            `;
+
+            context.response.write(responseHtml);
         }
     }
 
@@ -130,43 +184,241 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
      * @param {Object} currentUser - Current user details
      */
     function renderUploadInterface(form, currentUser) {
-        // Native NetSuite File Upload Field
-        const fileField = form.addField({
-            id: 'receipt_file',
-            type: ui.FieldType.FILE,
-            label: 'Receipt File'
-        });
-
-        fileField.isMandatory = true;
-
-        // File upload instructions
-        const uploadSection = form.addField({
-            id: 'upload_section',
+        // Add iframe for expense media upload
+        const iframeUploadField = form.addField({
+            id: 'expense_upload_iframe',
             type: ui.FieldType.INLINEHTML,
-            label: 'Upload Your Receipt'
+            label: 'Receipt Upload'
         });
 
-        const maxSize = commonLib.getScriptParameter(CONSTANTS.SCRIPT_PARAMS.MAX_FILE_SIZE, CONSTANTS.DEFAULT_VALUES.MAX_FILE_SIZE_MB);
+                // Get proper base URL - use runtime.accountId for reliable URL construction
+        const accountId = runtime.accountId;
+        const baseUrl = `https://${accountId}.app.netsuite.com`;
 
-        uploadSection.defaultValue = `
+        // Simple expense upload URL without custom return URL (avoid page not found)
+        const expenseUploadUrl = `${baseUrl}/app/common/media/expensereportmediaitem.nl?target=expense:expmediaitem&label=AI+Receipt+Processing&reportOwner=${currentUser.id}&entity=${currentUser.id}`;
+
+        // Log for debugging
+        commonLib.logOperation('debug_url_construction', {
+            accountId: accountId,
+            currentUserId: currentUser.id,
+            baseUrl: baseUrl,
+            expenseUploadUrl: expenseUploadUrl
+        });
+
+        iframeUploadField.defaultValue = `
             <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 20px; margin: 15px 0;">
                 <h3 style="color: #1f4e79; margin-top: 0;">📎 Upload Your Receipt</h3>
-                <p style="margin-bottom: 15px;">Select your receipt file using the field above, then click "Upload & Process" to extract expense data with AI.</p>
+                <p style="margin-bottom: 15px;">Click "Choose File" below to upload your receipt using NetSuite's secure expense system.</p>
+
+                <div style="margin: 15px 0;">
+                    <button type="button" id="btn_choose_file" onclick="openExpenseUpload()"
+                            style="background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 5px; font-size: 16px; cursor: pointer;">
+                        📁 Choose File
+                    </button>
+                </div>
+
+                <div id="upload_status" style="margin: 15px 0; display: none;">
+                    <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 10px; border-radius: 3px;">
+                        <strong>✅ File Uploaded Successfully!</strong><br>
+                        <span id="file_name_display"></span><br>
+                        <em>Click "Process Receipt" below to extract expense data.</em>
+                    </div>
+                </div>
+
                 <div style="background: #e9ecef; border-radius: 3px; padding: 10px; margin: 10px 0;">
                     <strong>📋 Supported Formats:</strong> ${CONSTANTS.SUPPORTED_FILE_TYPES.join(', ').toUpperCase()}<br>
-                    <strong>📏 Maximum Size:</strong> ${maxSize}MB<br>
+                    <strong>📏 Maximum Size:</strong> ${commonLib.getScriptParameter(CONSTANTS.SCRIPT_PARAMS.MAX_FILE_SIZE, CONSTANTS.DEFAULT_VALUES.MAX_FILE_SIZE_MB)}MB<br>
                     <strong>🤖 AI Processing:</strong> Automatically extracts vendor, amount, date, and category
                 </div>
                 <p style="font-size: 12px; color: #6c757d; margin-bottom: 0;">
                     💡 <strong>Tip:</strong> Clear, well-lit images work best for accurate data extraction
                 </p>
+
+                <div style="background: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 10px; border-radius: 3px; margin: 10px 0; font-size: 12px;">
+                    <strong>🔍 Debug Info:</strong><br>
+                    Account ID: ${accountId}<br>
+                    User ID: ${currentUser.id}<br>
+                    Generated URL: <span style="word-break: break-all; font-family: monospace;">${expenseUploadUrl}</span>
+                </div>
             </div>
+
+            <!-- Hidden iframe for expense upload -->
+            <iframe id="expense_upload_iframe" src="" style="display: none; width: 100%; height: 600px; border: 1px solid #ccc; border-radius: 5px;"></iframe>
+
+            <!-- Modal overlay -->
+            <div id="upload_modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000;">
+                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 0; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); width: 90%; max-width: 800px; height: 80%; max-height: 600px;">
+                    <div style="background: #1f4e79; color: white; padding: 15px; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="margin: 0;">📸 Upload Receipt - NetSuite Expense System</h3>
+                        <button onclick="closeUploadModal()" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">×</button>
+                    </div>
+                    <iframe id="modal_iframe" src="${expenseUploadUrl}" style="width: 100%; height: calc(100% - 60px); border: none;"></iframe>
+                </div>
+            </div>
+
+            <script>
+                let uploadedMediaId = null;
+                let uploadedFileName = null;
+
+                function openExpenseUpload() {
+                    document.getElementById('upload_modal').style.display = 'block';
+                    document.body.style.overflow = 'hidden';
+                }
+
+                function closeUploadModal() {
+                    document.getElementById('upload_modal').style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                }
+
+                // Listen for messages from the iframe
+                window.addEventListener('message', function(event) {
+                    console.log('Received message:', event);
+
+                    // Check if the message is from NetSuite upload completion
+                    if (event.data && event.data.type === 'expense_upload_complete') {
+                        uploadedMediaId = event.data.mediaId;
+                        uploadedFileName = event.data.fileName;
+
+                        // Show success status
+                        document.getElementById('file_name_display').textContent = uploadedFileName;
+                        document.getElementById('upload_status').style.display = 'block';
+                        document.getElementById('btn_choose_file').textContent = '✅ File Uploaded - Choose Different File';
+
+                        // Close modal
+                        closeUploadModal();
+
+                        // Enable process button
+                        enableProcessButton();
+                    }
+                });
+
+                                // Monitor iframe URL changes (enhanced monitoring)
+                function monitorIframe() {
+                    const iframe = document.getElementById('modal_iframe');
+                    if (iframe) {
+                        try {
+                            const iframeUrl = iframe.contentWindow.location.href;
+                            console.log('Iframe URL:', iframeUrl);
+
+                            // Check if URL contains optionid (successful upload)
+                            if (iframeUrl.includes('optionid=')) {
+                                const urlParams = new URLSearchParams(iframeUrl.split('?')[1]);
+                                const optionId = urlParams.get('optionid');
+                                const optionName = urlParams.get('optionname');
+
+                                if (optionId) {
+                                    uploadedMediaId = optionId;
+                                    uploadedFileName = decodeURIComponent(optionName || 'receipt.pdf');
+
+                                    console.log('Successfully captured expense media:', {
+                                        mediaId: uploadedMediaId,
+                                        fileName: uploadedFileName
+                                    });
+
+                                    // Show success status
+                                    document.getElementById('file_name_display').textContent = uploadedFileName;
+                                    document.getElementById('upload_status').style.display = 'block';
+                                    document.getElementById('btn_choose_file').textContent = '✅ File Uploaded - Choose Different File';
+
+                                    // Close modal
+                                    closeUploadModal();
+
+                                    // Enable process button
+                                    enableProcessButton();
+                                }
+                            }
+
+                            // Also check for upload completion pages
+                            if (iframeUrl.includes('addpage.nl') && iframeUrl.includes('whence=')) {
+                                console.log('Upload completed, checking for parameters...');
+                                // Sometimes the success page has different parameter names
+                            }
+
+                        } catch (e) {
+                            // Cross-origin restrictions - this is expected for most pages
+                            console.log('Cannot access iframe URL due to cross-origin policy (this is normal)');
+                        }
+                    }
+                }
+
+                // More frequent polling during active upload
+                let monitoringInterval = setInterval(monitorIframe, 1000);
+
+                // Stop monitoring after 30 minutes to prevent memory leaks
+                setTimeout(function() {
+                    if (monitoringInterval) {
+                        clearInterval(monitoringInterval);
+                        console.log('Stopped iframe monitoring after 30 minutes');
+                    }
+                }, 30 * 60 * 1000);
+
+                function enableProcessButton() {
+                    // Add process button if it doesn't exist
+                    if (!document.getElementById('btn_process_receipt')) {
+                        const processButton = document.createElement('button');
+                        processButton.id = 'btn_process_receipt';
+                        processButton.type = 'button';
+                        processButton.onclick = processUploadedReceipt;
+                        processButton.style.cssText = 'background: #28a745; color: white; border: none; padding: 12px 24px; border-radius: 5px; font-size: 16px; cursor: pointer; margin-left: 10px;';
+                        processButton.textContent = '🤖 Process Receipt';
+
+                        document.getElementById('btn_choose_file').parentNode.appendChild(processButton);
+                    }
+                }
+
+                function processUploadedReceipt() {
+                    if (!uploadedMediaId) {
+                        alert('No file uploaded. Please choose a file first.');
+                        return;
+                    }
+
+                    // Submit form with uploaded media ID
+                    const form = document.forms[0];
+
+                    // Add hidden inputs for the uploaded media
+                    const mediaIdInput = document.createElement('input');
+                    mediaIdInput.type = 'hidden';
+                    mediaIdInput.name = 'uploaded_media_id';
+                    mediaIdInput.value = uploadedMediaId;
+                    form.appendChild(mediaIdInput);
+
+                    const fileNameInput = document.createElement('input');
+                    fileNameInput.type = 'hidden';
+                    fileNameInput.name = 'uploaded_file_name';
+                    fileNameInput.value = uploadedFileName;
+                    form.appendChild(fileNameInput);
+
+                    const actionInput = document.createElement('input');
+                    actionInput.type = 'hidden';
+                    actionInput.name = 'action';
+                    actionInput.value = 'process_expense_media';
+                    form.appendChild(actionInput);
+
+                    // Show processing message
+                    showProcessingMessage('Starting AI processing of your receipt...');
+
+                    // Submit form
+                    form.submit();
+                }
+
+                function showProcessingMessage(message) {
+                    const overlay = document.createElement('div');
+                    overlay.id = 'processing-overlay';
+                    overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10001; display: flex; align-items: center; justify-content: center;';
+
+                    const messageBox = document.createElement('div');
+                    messageBox.style.cssText = 'background: white; padding: 30px; border-radius: 5px; text-align: center; max-width: 400px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);';
+                    messageBox.innerHTML = '<div style="font-size: 18px; color: #1f4e79; margin-bottom: 15px;">🔄 Processing...</div><div style="margin-bottom: 15px;">' + message + '</div><div style="font-size: 12px; color: #666;">Please wait while we process your receipt.</div>';
+
+                    overlay.appendChild(messageBox);
+                    document.body.appendChild(overlay);
+                }
+            </script>
         `;
 
-        // Submit button
-        form.addSubmitButton({
-            label: 'Upload & Process Receipt'
-        });
+        // Remove the old file field and submit button
+        // We'll handle submission through JavaScript now
     }
 
     /**
@@ -232,9 +484,19 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
 
         try {
             const parameters = context.request.parameters;
-            const files = context.request.files;
+            const action = parameters.action;
 
-            // Check if this is a processing trigger (Step 2) or file upload (Step 1)
+            // Handle expense media processing
+            if (action === 'process_expense_media') {
+                const mediaId = parameters.uploaded_media_id;
+                const fileName = parameters.uploaded_file_name;
+                const userId = parameters.user_id;
+
+                return triggerExpenseMediaProcessing(context, mediaId, fileName, userId, trackingId);
+            }
+
+            // Legacy file upload handling (keep for backward compatibility)
+            const files = context.request.files;
             const uploadedFileId = parameters.uploaded_file_id;
             const uploadedFileName = parameters.uploaded_file_name;
 
@@ -257,7 +519,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
     }
 
     /**
-     * Handle initial file upload (Step 1)
+     * Handle initial file upload (Step 1) - Legacy support
      * @param {Object} context - Request context
      * @param {string} trackingId - Tracking ID for this operation
      */
@@ -370,6 +632,85 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
             commonLib.logOperation('mr_task_submission_error', {
                 error: error.message,
                 fileId: fileId,
+                trackingId: trackingId
+            }, 'error');
+
+            throw new Error(`Failed to start processing: ${error.message}`);
+        }
+    }
+
+    /**
+     * Trigger processing of expense media item
+     * @param {Object} context - Request context
+     * @param {string} mediaId - ID of expense media item
+     * @param {string} fileName - Name of uploaded file
+     * @param {string} userId - User ID
+     * @param {string} trackingId - Tracking ID for this operation
+     */
+    function triggerExpenseMediaProcessing(context, mediaId, fileName, userId, trackingId) {
+        commonLib.logOperation('trigger_expense_media_processing_start', {
+            trackingId: trackingId,
+            mediaId: mediaId,
+            fileName: fileName,
+            userId: userId
+        });
+
+        // Start Map/Reduce script with expense media information
+        const mrTaskId = startExpenseMediaProcessing(mediaId, fileName, userId, trackingId);
+
+        commonLib.logOperation('expense_media_processing_triggered', {
+            trackingId: trackingId,
+            mediaId: mediaId,
+            mrTaskId: mrTaskId
+        });
+
+        // Show processing started page
+        return showProcessingStartedPage(context, {
+            fileName: fileName,
+            trackingId: trackingId,
+            mrTaskId: mrTaskId
+        });
+    }
+
+    /**
+     * Start Map/Reduce script to process the expense media
+     * @param {string} mediaId - ID of expense media item to process
+     * @param {string} fileName - Name of file
+     * @param {string} userId - User ID
+     * @param {string} trackingId - Tracking ID
+     * @returns {string} Map/Reduce task ID
+     */
+    function startExpenseMediaProcessing(mediaId, fileName, userId, trackingId) {
+        try {
+            const mrTask = task.create({
+                taskType: task.TaskType.MAP_REDUCE,
+                scriptId: CONSTANTS.SCRIPT_IDS.PROCESS_MR,
+                deploymentId: CONSTANTS.DEPLOYMENT_IDS.PROCESS_MR,
+                params: {
+                    'custscript_ains_file_id': mediaId,
+                    'custscript_ains_file_name': fileName,
+                    'custscript_ains_user_id': userId,
+                    'custscript_ains_tracking_id': trackingId,
+                    'custscript_ains_is_expense_media': true  // Flag to indicate expense media
+                }
+            });
+
+            const taskId = mrTask.submit();
+
+            commonLib.logOperation('mr_task_submitted_expense_media', {
+                taskId: taskId,
+                mediaId: mediaId,
+                fileName: fileName,
+                userId: userId,
+                trackingId: trackingId
+            });
+
+            return taskId;
+
+        } catch (error) {
+            commonLib.logOperation('mr_task_submission_error_expense_media', {
+                error: error.message,
+                mediaId: mediaId,
                 trackingId: trackingId
             }, 'error');
 

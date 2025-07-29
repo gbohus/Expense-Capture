@@ -235,16 +235,25 @@ define(['N/currentRecord', 'N/https', 'N/url', 'N/file', '../Libraries/AINS_LIB_
                     });
                 }
 
-                                                                // Set file attachment using filename (based on XML analysis)
+                                                                                // Set file attachment using file ID from custom record
                 if (expense.fileId) {
                     try {
-                        const fileObj = file.load({ id: parseInt(expense.fileId) });
+                        const fileIdValue = parseInt(expense.fileId);
+                        console.log('Setting expmediaitem with value:', fileIdValue, 'type:', typeof fileIdValue);
+
                         rec.setCurrentSublistValue({
                             sublistId: 'expense',
                             fieldId: 'expmediaitem',
-                            value: fileObj.name
+                            value: fileIdValue
                         });
-                        console.log('File attachment set:', fileObj.name);
+
+                        // Immediately check if it was set
+                        const setValue = rec.getCurrentSublistValue({
+                            sublistId: 'expense',
+                            fieldId: 'expmediaitem'
+                        });
+                        console.log('Value immediately after setting:', setValue);
+
                     } catch (error) {
                         console.error('Could not set file attachment:', error.message);
                     }
@@ -260,9 +269,12 @@ define(['N/currentRecord', 'N/https', 'N/url', 'N/file', '../Libraries/AINS_LIB_
                             fieldId: 'expmediaitem',
                             line: addedCount
                         });
-                        console.log('File attachment committed:', attachmentValue ? '✅ Success' : '❌ Failed');
+                        console.log('Post-commit expmediaitem value:', attachmentValue);
+                        console.log('Post-commit value type:', typeof attachmentValue);
+                        console.log('Expected file ID:', expense.fileId);
+                        console.log('Values match:', attachmentValue == expense.fileId);
                     } catch (error) {
-                        console.error('Could not verify file attachment');
+                        console.error('Could not verify file attachment:', error.message);
                     }
                 }
 

@@ -1,7 +1,7 @@
 <portlet scriptid="customscript_ains_pl_empcentportlet">
   <description>Employee Center portlet for AI NS Expense Capture system</description>
   <isinactive>F</isinactive>
-  <name>AI NS|PL|Employee Center Portlet</name>
+  <name>AI NS|PL|Expense Capture</name>
   <notifyadmins>F</notifyadmins>
   <notifyemails></notifyemails>
   <notifyowner>T</notifyowner>

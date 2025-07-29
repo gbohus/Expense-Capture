@@ -21,8 +21,7 @@ function(currentRecord, dialog, url) {
             window.uploadAnother = uploadAnother;
             window.returnToDashboard = returnToDashboard;
 
-            // Add file validation to the file field if it exists
-            const record = scriptContext.currentRecord;
+            // Legacy file validation for backward compatibility
             const fileField = document.getElementById('receipt_file_fs');
             if (fileField) {
                 fileField.addEventListener('change', function(e) {
@@ -30,9 +29,30 @@ function(currentRecord, dialog, url) {
                 });
             }
 
+            // Initialize expense upload listeners if present
+            initializeExpenseUploadListeners();
+
         } catch (error) {
             console.error('AI NS Receipt Upload initialization error:', error);
         }
+    }
+
+    /**
+     * Initialize listeners for expense upload iframe
+     */
+    function initializeExpenseUploadListeners() {
+        // Listen for messages from expense upload iframe
+        window.addEventListener('message', function(event) {
+            console.log('Client script received message:', event);
+
+            if (event.data && event.data.type === 'expense_upload_complete') {
+                console.log('Expense upload completed:', event.data);
+                // The embedded JavaScript in the suitelet handles this
+            } else if (event.data && event.data.type === 'expense_upload_cancelled') {
+                console.log('Expense upload cancelled');
+                // Could show a message here if needed
+            }
+        });
     }
 
     /**
@@ -44,12 +64,13 @@ function(currentRecord, dialog, url) {
         try {
             const record = scriptContext.currentRecord;
 
-            // Check if we have an uploaded file (for step 1) or are processing (for step 2)
+            // Check if we have an uploaded file or media (for step 1) or are processing (for step 2)
             const uploadedFileId = record.getValue('uploaded_file_id');
+            const uploadedMediaId = record.getValue('uploaded_media_id');
             const receiptFile = record.getValue('receipt_file');
 
-            // Step 1: File upload validation
-            if (!uploadedFileId && !receiptFile) {
+            // Step 1: File/Media upload validation
+            if (!uploadedFileId && !uploadedMediaId && !receiptFile) {
                 dialog.alert({
                     title: 'File Required',
                     message: 'Please select a receipt file to upload.'
@@ -57,7 +78,7 @@ function(currentRecord, dialog, url) {
                 return false;
             }
 
-            // If we have a file, validate it
+            // If we have a traditional file, validate it
             if (receiptFile) {
                 const fileValidation = validateUploadedFile(receiptFile);
                 if (!fileValidation.isValid) {
@@ -72,7 +93,7 @@ function(currentRecord, dialog, url) {
             // Show processing message
             if (receiptFile) {
                 showProcessingMessage('Uploading and processing your receipt...');
-            } else if (uploadedFileId) {
+            } else if (uploadedFileId || uploadedMediaId) {
                 showProcessingMessage('Starting AI processing of your receipt...');
             }
 

@@ -20,7 +20,7 @@ function(ui, runtime, query, url, format, commonLib) {
      */
     function render(params) {
         const portlet = params.portlet;
-        portlet.title = 'AI Expense Receipt Capture';
+        portlet.title = 'AI Expense Capture - All Records';
 
         try {
             const currentUser = commonLib.getCurrentUser();
@@ -30,9 +30,9 @@ function(ui, runtime, query, url, format, commonLib) {
                 column: params.column
             });
 
-            // Get user's recent uploads
-            const recentUploads = getUserRecentUploads(currentUser.id);
-            const stats = calculateUserStats(recentUploads);
+            // Get recent uploads for all users
+            const recentUploads = getRecentUploads();
+            const stats = calculateRecentStats(recentUploads);
 
             // Create and set main content
             portlet.html = createPortletContent(currentUser, recentUploads, stats);
@@ -54,11 +54,10 @@ function(ui, runtime, query, url, format, commonLib) {
     }
 
     /**
-     * Get user's recent expense capture uploads using SuiteQL
-     * @param {string} userId - User ID
+     * Get recent expense capture uploads using SuiteQL
      * @returns {Array} Array of recent uploads
      */
-    function getUserRecentUploads(userId) {
+    function getRecentUploads() {
         try {
             const suiteQL = `
                 SELECT
@@ -72,15 +71,13 @@ function(ui, runtime, query, url, format, commonLib) {
                     created,
                     custrecord_ains_file_type
                 FROM customrecord_ains_expense_capture
-                WHERE createdby = ?
-                AND isinactive = 'F'
+                WHERE isinactive = 'F'
                 ORDER BY created DESC
                 LIMIT 10
             `;
 
             const results = query.runSuiteQL({
-                query: suiteQL,
-                params: [userId]
+                query: suiteQL
             }).results;
 
             return results.map(result => ({
@@ -97,7 +94,6 @@ function(ui, runtime, query, url, format, commonLib) {
 
         } catch (error) {
             commonLib.logOperation('get_recent_uploads_error', {
-                userId: userId,
                 error: error.message
             }, 'error');
 
@@ -106,11 +102,11 @@ function(ui, runtime, query, url, format, commonLib) {
     }
 
     /**
-     * Calculate user statistics
-     * @param {Array} uploads - User uploads
+     * Calculate statistics for recent uploads
+     * @param {Array} uploads - Recent uploads
      * @returns {Object} Statistics object
      */
-    function calculateUserStats(uploads) {
+    function calculateRecentStats(uploads) {
         const stats = {
             total: uploads.length,
             pending: 0,
@@ -369,7 +365,7 @@ function(ui, runtime, query, url, format, commonLib) {
         return `
             <div class="ains-header">
                 <div style="font-size: 18px; font-weight: bold; margin-bottom: 6px;">
-                    Expense Capture
+                    All Expense Captures
                 </div>
 
             </div>
@@ -414,8 +410,8 @@ function(ui, runtime, query, url, format, commonLib) {
             return `
                 <div class="ains-recent">
                     <div class="ains-empty-state">
-                        <div class="ains-empty-title">No receipts uploaded</div>
-                        <div class="ains-empty-subtitle">Upload receipt documents to begin processing</div>
+                        <div class="ains-empty-title">No expense captures found</div>
+                        <div class="ains-empty-subtitle">No receipt documents have been uploaded yet</div>
                     </div>
                 </div>
             `;
