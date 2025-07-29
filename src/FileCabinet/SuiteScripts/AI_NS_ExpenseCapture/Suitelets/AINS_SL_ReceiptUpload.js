@@ -214,12 +214,13 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                     padding: var(--nsn-uif-redwood-size-m);
                     margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
                     text-align: center;
+                    opacity: 0.95;
                 }
 
                 .process-flow-title {
-                    font-size: 16px;
+                    font-size: 15px;
                     font-weight: 600;
-                    color: var(--nsn-uif-redwood-color-light-text-primary);
+                    color: var(--nsn-uif-redwood-color-light-text-secondary);
                     margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
                 }
 
@@ -233,6 +234,56 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                     margin: 0 auto;
                 }
 
+                .step-icon {
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 50%;
+                    background-color: var(--nsn-uif-redwood-color-light-brand-100);
+                    color: white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 18px;
+                    font-weight: 700;
+                    margin-bottom: 12px;
+                    box-shadow: var(--nsn-uif-redwood-shadow-small);
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                    font-family: 'Oracle Sans', sans-serif;
+                }
+
+                .step-icon.upload::before {
+                    content: "↑";
+                    font-size: 20px;
+                    font-weight: 900;
+                }
+
+                .step-icon.process::before {
+                    content: "⟳";
+                    font-size: 18px;
+                    font-weight: 700;
+                }
+
+                .step-icon.review::before {
+                    content: "✓";
+                    font-size: 20px;
+                    font-weight: 900;
+                }
+
+                .step-title {
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: var(--nsn-uif-redwood-color-light-text-primary);
+                    margin: 0 0 6px 0;
+                    line-height: 1.2;
+                }
+
+                .step-description {
+                    font-size: 12px;
+                    color: var(--nsn-uif-redwood-color-light-text-secondary);
+                    margin: 0;
+                    line-height: 1.4;
+                }
+
                 .process-step {
                     display: flex;
                     flex-direction: column;
@@ -241,35 +292,16 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                     flex: 1;
                     min-width: 120px;
                     max-width: 160px;
+                    transition: transform 0.2s ease;
                 }
 
-                .step-icon {
-                    width: 48px;
-                    height: 48px;
-                    border-radius: 50%;
-                    background-color: var(--nsn-uif-redwood-color-light-brand-100);
-                    color: white;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 20px;
-                    margin-bottom: 8px;
-                    box-shadow: var(--nsn-uif-redwood-shadow-small);
+                .process-step:hover {
+                    transform: translateY(-2px);
                 }
 
-                .step-title {
-                    font-size: 12px;
-                    font-weight: 600;
-                    color: var(--nsn-uif-redwood-color-light-text-primary);
-                    margin: 0 0 4px 0;
-                    line-height: 1.2;
-                }
-
-                .step-description {
-                    font-size: 10px;
-                    color: var(--nsn-uif-redwood-color-light-text-secondary);
-                    margin: 0;
-                    line-height: 1.3;
+                .process-step:hover .step-icon {
+                    transform: scale(1.05);
+                    box-shadow: 0 6px 12px 0 rgba(0, 0, 0, 0.2);
                 }
 
                 .process-arrow {
@@ -296,50 +328,68 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                     background-color: var(--nsn-uif-redwood-color-light-neutral-0);
                     border: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
                     border-radius: var(--nsn-uif-redwood-border-rounded-corners);
-                    padding: var(--nsn-uif-redwood-size-m);
+                    padding: var(--nsn-uif-redwood-size-l);
                     margin: var(--nsn-uif-redwood-size-s) 0;
                     text-align: center;
                     box-shadow: var(--nsn-uif-redwood-shadow-small);
+                    transition: box-shadow 0.2s ease;
+                    position: relative;
+                }
+
+                .upload-container:hover {
+                    box-shadow: 0 6px 12px 0px rgba(0, 0, 0, 0.12);
                 }
 
                 .upload-title {
-                    font-size: 18px;
+                    font-size: 20px;
                     font-weight: 600;
                     color: var(--nsn-uif-redwood-color-light-text-primary);
                     margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
                 }
 
                 .upload-subtitle {
-                    font-size: 14px;
+                    font-size: 16px;
                     color: var(--nsn-uif-redwood-color-light-text-secondary);
-                    margin: 0 0 var(--nsn-uif-redwood-size-m) 0;
+                    margin: 0 0 var(--nsn-uif-redwood-size-l) 0;
                 }
 
                 .choose-file-btn {
                     background-color: var(--nsn-uif-redwood-color-light-brand-120);
                     color: white;
                     border: none;
-                    padding: 12px 24px;
+                    padding: 16px 32px;
                     border-radius: var(--nsn-uif-redwood-border-rounded-corners);
-                    font-size: 14px;
+                    font-size: 16px;
                     font-weight: 600;
                     cursor: pointer;
                     box-shadow: var(--nsn-uif-redwood-shadow-small);
-                    transition: background-color 0.2s ease;
+                    transition: all 0.2s ease;
+                    min-width: 160px;
+                    position: relative;
+                    font-family: 'Oracle Sans', sans-serif;
                 }
 
                 .choose-file-btn:hover {
                     background-color: var(--nsn-uif-redwood-color-light-brand-100);
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 12px 0 rgba(0, 0, 0, 0.2);
+                }
+
+                .choose-file-btn:active {
+                    transform: translateY(0);
+                    box-shadow: var(--nsn-uif-redwood-shadow-small);
                 }
 
                 .upload-success {
-                    background-color: var(--nsn-uif-redwood-color-light-neutral-10);
-                    border: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
+                    background-color: var(--nsn-uif-redwood-color-light-surface-info-low);
+                    border: 1px solid var(--nsn-uif-redwood-color-light-brand-100);
+                    border-left: 4px solid var(--nsn-uif-redwood-color-light-brand-100);
                     border-radius: var(--nsn-uif-redwood-border-rounded-corners);
                     padding: var(--nsn-uif-redwood-size-s);
                     margin: var(--nsn-uif-redwood-size-s) 0;
                     text-align: left;
                     display: none;
+                    transition: all 0.3s ease;
                 }
 
                 .success-title {
@@ -347,6 +397,14 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                     font-weight: 600;
                     color: var(--nsn-uif-redwood-color-light-text-primary);
                     margin: 0 0 8px 0;
+                }
+
+                .success-title::before {
+                    content: "✓";
+                    color: var(--nsn-uif-redwood-color-light-brand-100);
+                    font-weight: 900;
+                    margin-right: 8px;
+                    font-size: 16px;
                 }
 
                 .file-detail {
@@ -376,17 +434,26 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                     background-color: var(--nsn-uif-redwood-color-light-brand-100);
                     color: white;
                     border: none;
-                    padding: 14px 28px;
+                    padding: 16px 32px;
                     border-radius: var(--nsn-uif-redwood-border-rounded-corners);
                     font-size: 16px;
                     font-weight: 600;
                     cursor: pointer;
                     box-shadow: var(--nsn-uif-redwood-shadow-small);
-                    transition: background-color 0.2s ease;
+                    transition: all 0.2s ease;
+                    min-width: 160px;
+                    font-family: 'Oracle Sans', sans-serif;
                 }
 
                 .process-btn:hover {
                     background-color: var(--nsn-uif-redwood-color-light-brand-120);
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 12px 0 rgba(0, 0, 0, 0.2);
+                }
+
+                .process-btn:active {
+                    transform: translateY(0);
+                    box-shadow: var(--nsn-uif-redwood-shadow-small);
                 }
 
                 .my-app-modal-backdrop {
@@ -446,19 +513,19 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                 <div class="process-flow-title">Expense Capture Processing Flow</div>
                 <div class="process-flow-steps">
                     <div class="process-step">
-                        <div class="step-icon">⬆</div>
+                        <div class="step-icon upload"></div>
                         <div class="step-title">Upload</div>
                         <div class="step-description">Choose your receipt file</div>
                     </div>
                     <span class="process-arrow">→</span>
                     <div class="process-step">
-                        <div class="step-icon">⚙</div>
+                        <div class="step-icon process"></div>
                         <div class="step-title">Process</div>
                         <div class="step-description">Extract data using AI</div>
                     </div>
                     <span class="process-arrow">→</span>
                     <div class="process-step">
-                        <div class="step-icon">✓</div>
+                        <div class="step-icon review"></div>
                         <div class="step-title">Review</div>
                         <div class="step-description">Navigate to expense report and add expense items</div>
                     </div>
@@ -470,11 +537,11 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                 <div class="upload-subtitle">Upload your receipt for automatic expense data extraction</div>
 
                 <button type="button" id="btn_choose_file" onclick="openExpenseUpload()" class="choose-file-btn">
-                    📁 Choose File
+                📁 Choose File
                 </button>
 
                 <div id="upload_status" class="upload-success">
-                    <div class="success-title">✅ File Uploaded Successfully</div>
+                    <div class="success-title">File Uploaded Successfully</div>
                     <div class="file-detail"><strong>File:</strong> <span id="file_name_display"></span></div>
                     <div class="file-detail"><strong>ID:</strong> <span id="media_id_display" class="media-id"></span></div>
                 </div>
@@ -484,7 +551,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
             <div id="upload_modal" class="my-app-modal-backdrop" style="display: none;">
                 <div class="my-app-modal-dialog" style="width: 90%; max-width: 800px; height: 80%; max-height: 600px;">
                     <div class="my-app-modal-header">
-                        <span>📸 Upload Receipt</span>
+                        <span>Upload Receipt</span>
                         <button onclick="closeUploadModal()" class="close-button">×</button>
                     </div>
                     <iframe id="modal_iframe" src="${expenseUploadUrl}" style="width: 100%; height: calc(100% - 60px); border: none; background: white;"></iframe>
@@ -790,40 +857,62 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                     background-color: var(--nsn-uif-redwood-color-light-neutral-0);
                     border: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
                     border-radius: var(--nsn-uif-redwood-border-rounded-corners);
-                    padding: var(--nsn-uif-redwood-size-m);
+                    padding: var(--nsn-uif-redwood-size-l);
                     margin: var(--nsn-uif-redwood-size-s) 0;
                     text-align: center;
                     box-shadow: var(--nsn-uif-redwood-shadow-small);
+                    transition: box-shadow 0.2s ease;
+                    position: relative;
+                }
+
+                .upload-container:hover {
+                    box-shadow: 0 6px 12px 0px rgba(0, 0, 0, 0.12);
                 }
 
                 .upload-title {
-                    font-size: 18px;
+                    font-size: 20px;
                     font-weight: 600;
                     color: var(--nsn-uif-redwood-color-light-text-primary);
                     margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
                 }
 
                 .upload-subtitle {
-                    font-size: 14px;
+                    font-size: 16px;
                     color: var(--nsn-uif-redwood-color-light-text-secondary);
-                    margin: 0 0 var(--nsn-uif-redwood-size-m) 0;
+                    margin: 0 0 var(--nsn-uif-redwood-size-l) 0;
                 }
 
                 .choose-file-btn {
                     background-color: var(--nsn-uif-redwood-color-light-brand-120);
                     color: white;
                     border: none;
-                    padding: 12px 24px;
+                    padding: 16px 32px;
                     border-radius: var(--nsn-uif-redwood-border-rounded-corners);
-                    font-size: 14px;
+                    font-size: 16px;
                     font-weight: 600;
                     cursor: pointer;
                     box-shadow: var(--nsn-uif-redwood-shadow-small);
-                    transition: background-color 0.2s ease;
+                    transition: all 0.2s ease;
+                    min-width: 160px;
+                    position: relative;
+                    font-family: 'Oracle Sans', sans-serif;
+                }
+
+                .choose-file-btn::before {
+                    content: "📄";
+                    margin-right: 8px;
+                    font-size: 14px;
                 }
 
                 .choose-file-btn:hover {
                     background-color: var(--nsn-uif-redwood-color-light-brand-100);
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 12px 0 rgba(0, 0, 0, 0.2);
+                }
+
+                .choose-file-btn:active {
+                    transform: translateY(0);
+                    box-shadow: var(--nsn-uif-redwood-shadow-small);
                 }
 
                 .upload-success {
@@ -870,17 +959,26 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                     background-color: var(--nsn-uif-redwood-color-light-brand-100);
                     color: white;
                     border: none;
-                    padding: 14px 28px;
+                    padding: 16px 32px;
                     border-radius: var(--nsn-uif-redwood-border-rounded-corners);
                     font-size: 16px;
                     font-weight: 600;
                     cursor: pointer;
                     box-shadow: var(--nsn-uif-redwood-shadow-small);
-                    transition: background-color 0.2s ease;
+                    transition: all 0.2s ease;
+                    min-width: 160px;
+                    font-family: 'Oracle Sans', sans-serif;
                 }
 
                 .process-btn:hover {
                     background-color: var(--nsn-uif-redwood-color-light-brand-120);
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 12px 0 rgba(0, 0, 0, 0.2);
+                }
+
+                .process-btn:active {
+                    transform: translateY(0);
+                    box-shadow: var(--nsn-uif-redwood-shadow-small);
                 }
 
                 .my-app-modal-backdrop {
@@ -964,7 +1062,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                 <div class="upload-subtitle">Upload your receipt for automatic expense data extraction</div>
 
                 <button type="button" id="btn_choose_file" onclick="openRegularUpload()" class="choose-file-btn">
-                    📁 Choose File
+                📁 Choose File
                 </button>
 
                 <div id="upload_status" class="upload-success">
