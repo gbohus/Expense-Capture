@@ -206,6 +206,31 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                     --nsn-uif-redwood-shadow-small: 0 4px 8px 0 rgba(0, 0, 0, 0.16);
                 }
 
+                /* Main container to center content */
+                .upload-page-container {
+                    max-width: 600px;
+                    margin: 0 auto;
+                    padding: 20px;
+                    background-color: var(--nsn-uif-redwood-color-light-neutral-0);
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                    box-shadow: var(--nsn-uif-redwood-shadow-small);
+                }
+
+                .page-header {
+                    background-color: var(--nsn-uif-redwood-color-light-brand-120);
+                    color: white;
+                    padding: var(--nsn-uif-redwood-size-m);
+                    margin: -20px -20px 20px -20px;
+                    text-align: center;
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners) var(--nsn-uif-redwood-border-rounded-corners) 0 0;
+                }
+
+                .page-header h1 {
+                    margin: 0;
+                    font-size: 24px;
+                    font-weight: 600;
+                }
+
                 /* Process Flow Styles */
                 .process-flow-container {
                     background-color: var(--nsn-uif-redwood-color-light-neutral-10);
@@ -313,6 +338,12 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                 }
 
                 @media (max-width: 600px) {
+                    .upload-page-container {
+                        margin: 0;
+                        border-radius: 0;
+                        padding: 15px;
+                    }
+
                     .process-flow-steps {
                         flex-direction: column;
                         gap: var(--nsn-uif-redwood-size-s);
@@ -509,41 +540,47 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                 }
             </style>
 
-            <div class="process-flow-container">
-                <div class="process-flow-title">Expense Capture Processing Flow</div>
-                <div class="process-flow-steps">
-                    <div class="process-step">
-                        <div class="step-icon upload"></div>
-                        <div class="step-title">Upload</div>
-                        <div class="step-description">Choose your receipt file</div>
-                    </div>
-                    <span class="process-arrow">→</span>
-                    <div class="process-step">
-                        <div class="step-icon process"></div>
-                        <div class="step-title">Process</div>
-                        <div class="step-description">Extract data using AI</div>
-                    </div>
-                    <span class="process-arrow">→</span>
-                    <div class="process-step">
-                        <div class="step-icon review"></div>
-                        <div class="step-title">Review</div>
-                        <div class="step-description">Navigate to expense report and add expense items</div>
+            <div class="upload-page-container">
+                <div class="page-header">
+                    <h1>Expense Capture</h1>
+                </div>
+
+                <div class="process-flow-container">
+                    <div class="process-flow-title">Expense Capture Processing Flow</div>
+                    <div class="process-flow-steps">
+                        <div class="process-step">
+                            <div class="step-icon upload"></div>
+                            <div class="step-title">Upload</div>
+                            <div class="step-description">Choose your receipt file</div>
+                        </div>
+                        <span class="process-arrow">→</span>
+                        <div class="process-step">
+                            <div class="step-icon process"></div>
+                            <div class="step-title">Process</div>
+                            <div class="step-description">Extract data using AI</div>
+                        </div>
+                        <span class="process-arrow">→</span>
+                        <div class="process-step">
+                            <div class="step-icon review"></div>
+                            <div class="step-title">Review</div>
+                            <div class="step-description">Navigate to expense report and add expense items</div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="upload-container">
-                <div class="upload-title">Receipt Processing</div>
-                <div class="upload-subtitle">Upload your receipt for automatic expense data extraction</div>
+                <div class="upload-container">
+                    <div class="upload-title">Receipt Processing</div>
+                    <div class="upload-subtitle">Upload your receipt for automatic expense data extraction</div>
 
-                <button type="button" id="btn_choose_file" onclick="openExpenseUpload()" class="choose-file-btn">
-                📁 Choose File
-                </button>
+                    <button type="button" id="btn_choose_file" onclick="openExpenseUpload()" class="choose-file-btn">
+                    📁 Choose File
+                    </button>
 
-                <div id="upload_status" class="upload-success">
-                    <div class="success-title">File Uploaded Successfully</div>
-                    <div class="file-detail"><strong>File:</strong> <span id="file_name_display"></span></div>
-                    <div class="file-detail"><strong>ID:</strong> <span id="media_id_display" class="media-id"></span></div>
+                    <div id="upload_status" class="upload-success">
+                        <div class="success-title">File Uploaded Successfully</div>
+                        <div class="file-detail"><strong>File:</strong> <span id="file_name_display"></span></div>
+                        <div class="file-detail"><strong>ID:</strong> <span id="media_id_display" class="media-id"></span></div>
+                    </div>
                 </div>
             </div>
 
@@ -767,6 +804,31 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                     --nsn-uif-redwood-shadow-small: 0 4px 8px 0 rgba(0, 0, 0, 0.16);
                 }
 
+                /* Main container to center content */
+                .upload-page-container {
+                    max-width: 600px;
+                    margin: 0 auto;
+                    padding: 20px;
+                    background-color: var(--nsn-uif-redwood-color-light-neutral-0);
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                    box-shadow: var(--nsn-uif-redwood-shadow-small);
+                }
+
+                .page-header {
+                    background-color: var(--nsn-uif-redwood-color-light-brand-120);
+                    color: white;
+                    padding: var(--nsn-uif-redwood-size-m);
+                    margin: -20px -20px 20px -20px;
+                    text-align: center;
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners) var(--nsn-uif-redwood-border-rounded-corners) 0 0;
+                }
+
+                .page-header h1 {
+                    margin: 0;
+                    font-size: 24px;
+                    font-weight: 600;
+                }
+
                 /* Process Flow Styles */
                 .process-flow-container {
                     background-color: var(--nsn-uif-redwood-color-light-neutral-10);
@@ -775,6 +837,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                     padding: var(--nsn-uif-redwood-size-m);
                     margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
                     text-align: center;
+                    opacity: 0.95;
                 }
 
                 .process-flow-title {
@@ -842,6 +905,12 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                 }
 
                 @media (max-width: 600px) {
+                    .upload-page-container {
+                        margin: 0;
+                        border-radius: 0;
+                        padding: 15px;
+                    }
+
                     .process-flow-steps {
                         flex-direction: column;
                         gap: var(--nsn-uif-redwood-size-s);
@@ -896,12 +965,6 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                     min-width: 160px;
                     position: relative;
                     font-family: 'Oracle Sans', sans-serif;
-                }
-
-                .choose-file-btn::before {
-                    content: "📄";
-                    margin-right: 8px;
-                    font-size: 14px;
                 }
 
                 .choose-file-btn:hover {
@@ -1034,41 +1097,47 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                 }
             </style>
 
-            <div class="process-flow-container">
-                <div class="process-flow-title">Expense Capture Processing Flow</div>
-                <div class="process-flow-steps">
-                    <div class="process-step">
-                        <div class="step-icon">⬆</div>
-                        <div class="step-title">Upload</div>
-                        <div class="step-description">Choose your receipt file</div>
-                    </div>
-                    <span class="process-arrow">→</span>
-                    <div class="process-step">
-                        <div class="step-icon">⚙</div>
-                        <div class="step-title">Process</div>
-                        <div class="step-description">Extract data using AI</div>
-                    </div>
-                    <span class="process-arrow">→</span>
-                    <div class="process-step">
-                        <div class="step-icon">✓</div>
-                        <div class="step-title">Review</div>
-                        <div class="step-description">Add to expense report</div>
+            <div class="upload-page-container">
+                <div class="page-header">
+                    <h1>🤖 Expense Capture</h1>
+                </div>
+
+                <div class="process-flow-container">
+                    <div class="process-flow-title">Expense Capture Processing Flow</div>
+                    <div class="process-flow-steps">
+                        <div class="process-step">
+                            <div class="step-icon">⬆</div>
+                            <div class="step-title">Upload</div>
+                            <div class="step-description">Choose your receipt file</div>
+                        </div>
+                        <span class="process-arrow">→</span>
+                        <div class="process-step">
+                            <div class="step-icon">⚙</div>
+                            <div class="step-title">Process</div>
+                            <div class="step-description">Extract data using AI</div>
+                        </div>
+                        <span class="process-arrow">→</span>
+                        <div class="process-step">
+                            <div class="step-icon">✓</div>
+                            <div class="step-title">Review</div>
+                            <div class="step-description">Add to expense report</div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="upload-container">
-                <div class="upload-title">Receipt Processing</div>
-                <div class="upload-subtitle">Upload your receipt for automatic expense data extraction</div>
+                <div class="upload-container">
+                    <div class="upload-title">Receipt Processing</div>
+                    <div class="upload-subtitle">Upload your receipt for automatic expense data extraction</div>
 
-                <button type="button" id="btn_choose_file" onclick="openRegularUpload()" class="choose-file-btn">
-                📁 Choose File
-                </button>
+                    <button type="button" id="btn_choose_file" onclick="openRegularUpload()" class="choose-file-btn">
+                    📁 Choose File
+                    </button>
 
-                <div id="upload_status" class="upload-success">
-                    <div class="success-title">✅ File Uploaded Successfully</div>
-                    <div class="file-detail"><strong>File:</strong> <span id="file_name_display"></span></div>
-                    <div class="file-detail"><strong>ID:</strong> <span id="media_id_display" class="media-id"></span></div>
+                    <div id="upload_status" class="upload-success">
+                        <div class="success-title">✅ File Uploaded Successfully</div>
+                        <div class="file-detail"><strong>File:</strong> <span id="file_name_display"></span></div>
+                        <div class="file-detail"><strong>ID:</strong> <span id="media_id_display" class="media-id"></span></div>
+                    </div>
                 </div>
             </div>
 
@@ -1516,24 +1585,71 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
      * @param {Object} details - Processing details
      */
     function showProcessingStartedPage(context, details) {
-        const form = ui.createForm({
-            title: 'AI Processing Started'
+        // Generate the proper suitelet URL for upload another functionality
+        const uploadUrl = url.resolveScript({
+            scriptId: runtime.getCurrentScript().id,
+            deploymentId: runtime.getCurrentScript().deploymentId
         });
 
-        // Add client script for button actions
-        form.clientScriptModulePath = '../ClientScripts/AINS_CS_ReceiptUploadSuccess.js';
+        // Use simple HTML response instead of NetSuite form to avoid form submission issues
+        const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>AI Processing Started - NetSuite</title>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <link rel="stylesheet" type="text/css" href="../Libraries/AINS_LIB_Styles.css">
+                <style>
+                    :root {
+                        --nsn-uif-redwood-color-light-neutral-0: rgb(255, 255, 255);
+                        --nsn-uif-redwood-color-light-neutral-10: rgb(251, 249, 248);
+                        --nsn-uif-redwood-color-light-neutral-20: rgb(245, 244, 242);
+                        --nsn-uif-redwood-color-light-brand-100: rgb(34, 126, 158);
+                        --nsn-uif-redwood-color-light-brand-120: rgb(54, 103, 125);
+                        --nsn-uif-redwood-color-light-text-primary: rgb(22, 21, 19);
+                        --nsn-uif-redwood-color-light-text-secondary: rgba(22, 21, 19, 0.7);
+                        --nsn-uif-redwood-color-light-border-divider: rgba(22, 21, 19, 0.12);
+                        --nsn-uif-redwood-size-s: 16px;
+                        --nsn-uif-redwood-size-m: 24px;
+                        --nsn-uif-redwood-border-rounded-corners: 6px;
+                        --nsn-uif-redwood-shadow-small: 0 4px 8px 0 rgba(0, 0, 0, 0.16);
+                    }
 
-        const statusField = form.addField({
-            id: 'processing_status',
-            type: ui.FieldType.INLINEHTML,
-            label: 'Processing Status'
-        });
+                    body {
+                        font-family: 'Oracle Sans', 'Helvetica Neue', sans-serif;
+                        background-color: var(--nsn-uif-redwood-color-light-neutral-10);
+                        margin: 0;
+                        padding: 20px;
+                        line-height: 1.5;
+                    }
 
-        statusField.defaultValue = `
-            <link rel="stylesheet" type="text/css" href="../Libraries/AINS_LIB_Styles.css">
+                    .container {
+                        max-width: 800px;
+                        margin: 0 auto;
+                        background-color: var(--nsn-uif-redwood-color-light-neutral-0);
+                        border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                        box-shadow: var(--nsn-uif-redwood-shadow-small);
+                        overflow: hidden;
+                    }
 
-            <style>
-                /* Component-specific styles not in the main CSS */
+                    .header {
+                        background-color: var(--nsn-uif-redwood-color-light-brand-120);
+                        color: white;
+                        padding: var(--nsn-uif-redwood-size-m);
+                        text-align: center;
+                    }
+
+                    .header h1 {
+                        margin: 0;
+                        font-size: 24px;
+                        font-weight: 600;
+                    }
+
+                    .content {
+                        padding: var(--nsn-uif-redwood-size-m);
+                    }
+
                 .processing-container {
                     background-color: var(--nsn-uif-redwood-color-light-neutral-0);
                     border: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
@@ -1545,8 +1661,8 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                 }
 
                 .success-header {
-                    font-size: var(--nsn-uif-redwood-font-size-heading-sm);
-                    font-weight: var(--nsn-uif-redwood-font-weight-semi-bold);
+                        font-size: 20px;
+                        font-weight: 600;
                     color: var(--nsn-uif-redwood-color-light-brand-100);
                     margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
                 }
@@ -1561,14 +1677,14 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                 }
 
                 .file-name {
-                    font-size: var(--nsn-uif-redwood-font-size-body-md);
-                    font-weight: var(--nsn-uif-redwood-font-weight-semi-bold);
+                        font-size: 16px;
+                        font-weight: 600;
                     color: var(--nsn-uif-redwood-color-light-text-primary);
-                    margin: 0 0 var(--nsn-uif-redwood-size-2-xs) 0;
+                        margin: 0 0 8px 0;
                 }
 
                 .file-detail {
-                    font-size: var(--nsn-uif-redwood-font-size-body-sm);
+                        font-size: 14px;
                     color: var(--nsn-uif-redwood-color-light-text-secondary);
                     margin: 0;
                 }
@@ -1582,20 +1698,20 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                 }
 
                 .processing-title {
-                    font-size: var(--nsn-uif-redwood-font-size-body-xl);
-                    font-weight: var(--nsn-uif-redwood-font-weight-semi-bold);
+                        font-size: 18px;
+                        font-weight: 600;
                     color: var(--nsn-uif-redwood-color-light-brand-100);
                     margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
                 }
 
                 .processing-message {
-                    font-size: var(--nsn-uif-redwood-font-size-body-md);
+                        font-size: 16px;
                     color: var(--nsn-uif-redwood-color-light-text-primary);
                     margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
                 }
 
                 .processing-details {
-                    font-size: var(--nsn-uif-redwood-font-size-body-sm);
+                        font-size: 14px;
                     color: var(--nsn-uif-redwood-color-light-text-secondary);
                     margin: 0;
                     line-height: 1.5;
@@ -1611,21 +1727,24 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
 
                 .action-btn {
                     background-color: var(--nsn-uif-redwood-color-light-brand-120);
-                    color: var(--nsn-uif-redwood-color-light-text-inverse);
+                        color: white;
                     border: none;
-                    padding: var(--nsn-uif-redwood-size-2-xs) var(--nsn-uif-redwood-size-m);
+                        padding: 12px 24px;
                     border-radius: var(--nsn-uif-redwood-border-rounded-corners);
-                    font-size: var(--nsn-uif-redwood-font-size-body-sm);
-                    font-weight: var(--nsn-uif-redwood-font-weight-semi-bold);
+                        font-size: 14px;
+                        font-weight: 600;
                     cursor: pointer;
                     box-shadow: var(--nsn-uif-redwood-shadow-small);
-                    transition: background-color 0.2s ease;
+                        transition: all 0.2s ease;
                     text-decoration: none;
                     display: inline-block;
+                        min-width: 160px;
                 }
 
                 .action-btn:hover {
                     background-color: var(--nsn-uif-redwood-color-light-brand-100);
+                        transform: translateY(-1px);
+                        box-shadow: 0 6px 12px 0 rgba(0, 0, 0, 0.2);
                 }
 
                 .action-btn.secondary {
@@ -1636,11 +1755,19 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
 
                 .action-btn.secondary:hover {
                     background-color: var(--nsn-uif-redwood-color-light-neutral-10);
+                        transform: translateY(-1px);
                 }
             </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>🤖 AI Processing Started</h1>
+                    </div>
 
+                    <div class="content">
             <div class="processing-container">
-                <div class="success-header">✅ Upload Successful!</div>
+                <div class="success-header">Upload Successful!</div>
 
                 <div class="file-info">
                     <div class="file-name">📄 ${details.fileName}</div>
@@ -1648,7 +1775,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                 </div>
 
                 <div class="processing-status">
-                    <div class="processing-title">🤖 AI Processing Started</div>
+                    <div class="processing-title">Processing Started</div>
                     <div class="processing-message">Your receipt is being processed automatically</div>
                     <div class="processing-details">
                         Processing typically takes 2-5 minutes<br>
@@ -1657,31 +1784,153 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                 </div>
 
                 <div class="action-buttons">
-                    <button onclick="uploadAnother()" class="action-btn">
+                                <button type="button" onclick="uploadAnother()" class="action-btn">
                         📁 Upload Another Receipt
                     </button>
-                    <button onclick="returnToDashboard()" class="action-btn secondary">
+                                <button type="button" onclick="returnToDashboard()" class="action-btn secondary">
                         🏠 Return to Dashboard
                     </button>
+                            </div>
+                        </div>
                 </div>
             </div>
 
             <script>
                 function uploadAnother() {
-                    // Navigate back to upload page
-                    const currentUrl = window.location.href;
-                    const baseUrl = currentUrl.split('?')[0];
-                    window.location.href = baseUrl;
+                        // Navigate back to upload page (GET request)
+                        try {
+                            // Use server-resolved URL for proper navigation
+                            const uploadUrl = '${uploadUrl}';
+                            console.log('Navigating to upload page:', uploadUrl);
+                            window.location.href = uploadUrl;
+                        } catch (error) {
+                            console.error('Error navigating to upload form:', error);
+                            // Fallback: force reload
+                            window.location.reload();
+                        }
                 }
 
                 function returnToDashboard() {
-                    // Navigate to Employee Center home
-                    window.location.href = '/app/center/userprefs.nl';
-                }
+                        // Navigate to NetSuite home screen
+                        try {
+                            console.log('Navigating to NetSuite dashboard');
+                            window.location.href = '/app/center/card.nl';
+                        } catch (error) {
+                            console.error('Error returning to dashboard:', error);
+                            // Fallback to general center
+                            window.location.href = '/app/center/';
+                        }
+                    }
+
+                    // Log page load for debugging
+                    console.log('Processing success page loaded');
             </script>
+            </body>
+            </html>
         `;
 
-        context.response.writePage(form);
+        // Write the HTML response directly
+        context.response.write(htmlContent);
+    }
+
+    /**
+     * Handle traditional file upload through form (legacy support)
+     * @param {Object} context - Request context
+     * @param {string} trackingId - Tracking ID for this operation
+     */
+    function handleFileUpload(context, trackingId) {
+        try {
+            const currentUser = commonLib.getCurrentUser();
+            const files = context.request.files;
+
+            // Check if any files were uploaded
+            if (!files || Object.keys(files).length === 0) {
+                throw new Error('No files were uploaded. Please select a file to upload.');
+            }
+
+            // Get the first uploaded file
+            const fileKey = Object.keys(files)[0];
+            const uploadedFile = files[fileKey];
+
+            commonLib.logOperation('legacy_file_upload_start', {
+                trackingId: trackingId,
+                fileName: uploadedFile.name,
+                fileSize: uploadedFile.size,
+                userId: currentUser.id
+            });
+
+            // Validate the uploaded file
+            const validation = validateUploadedFile(uploadedFile);
+            if (!validation.isValid) {
+                throw new Error(validation.message);
+            }
+
+            // Save the file with enhanced security
+            const savedFile = saveFileWithEnhancedSecurity(uploadedFile, currentUser.id);
+
+            commonLib.logOperation('legacy_file_saved', {
+                trackingId: trackingId,
+                fileId: savedFile.id,
+                fileName: savedFile.name,
+                userId: currentUser.id
+            });
+
+            // Start processing the saved file
+            return triggerProcessing(context, savedFile.id, savedFile.name, trackingId);
+
+        } catch (error) {
+            commonLib.logOperation('legacy_file_upload_error', {
+                trackingId: trackingId,
+                error: error.message
+            }, 'error');
+
+            throw error;
+        }
+    }
+
+    /**
+     * Trigger processing of uploaded file (legacy support)
+     * @param {Object} context - Request context
+     * @param {string} fileId - ID of uploaded file
+     * @param {string} fileName - Name of uploaded file
+     * @param {string} trackingId - Tracking ID for this operation
+     */
+    function triggerProcessing(context, fileId, fileName, trackingId) {
+        try {
+            const currentUser = commonLib.getCurrentUser();
+
+            commonLib.logOperation('trigger_legacy_processing_start', {
+                trackingId: trackingId,
+                fileId: fileId,
+                fileName: fileName,
+                userId: currentUser.id
+            });
+
+            // Start Map/Reduce script for regular file processing
+            const mrTaskId = startRegularFileProcessing(fileId, fileName, currentUser.id, trackingId);
+
+            commonLib.logOperation('legacy_processing_triggered', {
+                trackingId: trackingId,
+                fileId: fileId,
+                mrTaskId: mrTaskId
+            });
+
+            // Show processing started page
+            return showProcessingStartedPage(context, {
+                fileName: fileName,
+                trackingId: trackingId,
+                mrTaskId: mrTaskId
+            });
+
+        } catch (error) {
+            commonLib.logOperation('trigger_legacy_processing_error', {
+                trackingId: trackingId,
+                fileId: fileId,
+                error: error.message
+            }, 'error');
+
+            throw error;
+        }
     }
 
     /**
@@ -1812,51 +2061,269 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
      * @param {Object} details - Success details
      */
     function showSuccessPage(context, details) {
-        const form = ui.createForm({
-            title: 'Receipt Upload Successful'
+        // Generate the proper suitelet URL for upload another functionality
+        const uploadUrl = url.resolveScript({
+            scriptId: runtime.getCurrentScript().id,
+            deploymentId: runtime.getCurrentScript().deploymentId
         });
 
-        const successField = form.addField({
-            id: 'success_message',
-            type: ui.FieldType.INLINEHTML,
-            label: 'Status'
-        });
+        // Use simple HTML response for consistent design
+        const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Upload Successful - NetSuite</title>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    :root {
+                        --nsn-uif-redwood-color-light-neutral-0: rgb(255, 255, 255);
+                        --nsn-uif-redwood-color-light-neutral-10: rgb(251, 249, 248);
+                        --nsn-uif-redwood-color-light-neutral-20: rgb(245, 244, 242);
+                        --nsn-uif-redwood-color-light-brand-100: rgb(34, 126, 158);
+                        --nsn-uif-redwood-color-light-brand-120: rgb(54, 103, 125);
+                        --nsn-uif-redwood-color-light-text-primary: rgb(22, 21, 19);
+                        --nsn-uif-redwood-color-light-text-secondary: rgba(22, 21, 19, 0.7);
+                        --nsn-uif-redwood-color-light-border-divider: rgba(22, 21, 19, 0.12);
+                        --nsn-uif-redwood-color-light-success-100: rgb(40, 167, 69);
+                        --nsn-uif-redwood-color-light-success-10: rgb(243, 248, 244);
+                        --nsn-uif-redwood-size-s: 16px;
+                        --nsn-uif-redwood-size-m: 24px;
+                        --nsn-uif-redwood-border-rounded-corners: 6px;
+                        --nsn-uif-redwood-shadow-small: 0 4px 8px 0 rgba(0, 0, 0, 0.16);
+                    }
 
-        successField.defaultValue = `
-            <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 15px; border-radius: 5px; margin: 10px 0;">
-                <h3 style="margin-top: 0;">✓ Upload Successful!</h3>
-                <p><strong>File:</strong> ${details.fileName}</p>
-                <p><strong>Tracking ID:</strong> ${details.trackingId}</p>
-                <p><strong>Status:</strong> Processing started automatically</p>
-                <p>Your receipt is being processed by AI. Check back in a few minutes to see the extracted expense data.</p>
-            </div>
+                    body {
+                        font-family: 'Oracle Sans', 'Helvetica Neue', sans-serif;
+                        background-color: var(--nsn-uif-redwood-color-light-neutral-10);
+                        margin: 0;
+                        padding: 20px;
+                        line-height: 1.5;
+                    }
+
+                    .container {
+                        max-width: 600px;
+                        margin: 0 auto;
+                        background-color: var(--nsn-uif-redwood-color-light-neutral-0);
+                        border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                        box-shadow: var(--nsn-uif-redwood-shadow-small);
+                        overflow: hidden;
+                    }
+
+                    .header {
+                        background-color: var(--nsn-uif-redwood-color-light-success-100);
+                        color: white;
+                        padding: var(--nsn-uif-redwood-size-m);
+                        text-align: center;
+                    }
+
+                    .header h1 {
+                        margin: 0;
+                        font-size: 24px;
+                        font-weight: 600;
+                    }
+
+                    .content {
+                        padding: var(--nsn-uif-redwood-size-m);
+                    }
+
+                    .success-container {
+                        background-color: var(--nsn-uif-redwood-color-light-success-10);
+                        border: 1px solid var(--nsn-uif-redwood-color-light-success-100);
+                        border-left: 4px solid var(--nsn-uif-redwood-color-light-success-100);
+                        border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                        padding: var(--nsn-uif-redwood-size-m);
+                        margin: var(--nsn-uif-redwood-size-s) 0;
+                    }
+
+                    .success-header {
+                        font-size: 20px;
+                        font-weight: 600;
+                        color: var(--nsn-uif-redwood-color-light-success-100);
+                        margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
+                    }
+
+                    .success-header::before {
+                        content: "✓";
+                        margin-right: 8px;
+                    }
+
+                    .detail-item {
+                        margin: 8px 0;
+                        font-size: 14px;
+                    }
+
+                    .detail-label {
+                        font-weight: 600;
+                        color: var(--nsn-uif-redwood-color-light-text-primary);
+                    }
+
+                    .detail-value {
+                        color: var(--nsn-uif-redwood-color-light-text-secondary);
+                        font-family: 'Courier New', monospace;
+                        background-color: var(--nsn-uif-redwood-color-light-neutral-20);
+                        padding: 2px 6px;
+                        border-radius: 3px;
+                        font-size: 12px;
+                    }
+
+                    .success-details {
+                        font-size: 14px;
+                        color: var(--nsn-uif-redwood-color-light-text-secondary);
+                        margin: var(--nsn-uif-redwood-size-s) 0 0 0;
+                        line-height: 1.5;
+                    }
+
+                    .action-buttons {
+                        margin: var(--nsn-uif-redwood-size-m) 0 0 0;
+                        display: flex;
+                        gap: var(--nsn-uif-redwood-size-s);
+                        justify-content: center;
+                        flex-wrap: wrap;
+                    }
+
+                    .action-btn {
+                        background-color: var(--nsn-uif-redwood-color-light-brand-120);
+                        color: white;
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                        font-size: 14px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        box-shadow: var(--nsn-uif-redwood-shadow-small);
+                        transition: all 0.2s ease;
+                        text-decoration: none;
+                        display: inline-block;
+                        min-width: 160px;
+                    }
+
+                    .action-btn:hover {
+                        background-color: var(--nsn-uif-redwood-color-light-brand-100);
+                        transform: translateY(-1px);
+                        box-shadow: 0 6px 12px 0 rgba(0, 0, 0, 0.2);
+                    }
+
+                    .action-btn.secondary {
+                        background-color: var(--nsn-uif-redwood-color-light-neutral-20);
+                        color: var(--nsn-uif-redwood-color-light-text-primary);
+                        border: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
+                    }
+
+                    .action-btn.secondary:hover {
+                        background-color: var(--nsn-uif-redwood-color-light-neutral-10);
+                        transform: translateY(-1px);
+                    }
+
+                    @media (max-width: 600px) {
+                        .container {
+                            margin: 0;
+                            border-radius: 0;
+                        }
+
+                        body {
+                            padding: 15px;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>✅ Upload Successful</h1>
+                    </div>
+
+                    <div class="content">
+                        <div class="success-container">
+                            <div class="success-header">Upload Successful!</div>
+
+                            <div class="detail-item">
+                                <span class="detail-label">File:</span> ${details.fileName}
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Tracking ID:</span> <span class="detail-value">${details.trackingId}</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Status:</span> Processing started automatically
+                            </div>
+
+                            <div class="success-details">
+                                Your receipt is being processed by AI. Check back in a few minutes to see the extracted expense data.
+                            </div>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button type="button" onclick="uploadAnother()" class="action-btn">
+                                📁 Upload Another Receipt
+                            </button>
+                            ${details.isEmployeeCenter ?
+                                `<button type="button" onclick="returnToDashboard()" class="action-btn secondary">
+                                    🏠 Return to Dashboard
+                                </button>` :
+                                `<button type="button" onclick="viewRecord()" class="action-btn secondary">
+                                    👁️ View Record
+                                </button>`
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    function uploadAnother() {
+                        // Navigate back to upload page (GET request)
+                        try {
+                            // Use server-resolved URL for proper navigation
+                            const uploadUrl = '${uploadUrl}';
+                            console.log('Navigating to upload page:', uploadUrl);
+                            window.location.href = uploadUrl;
+                        } catch (error) {
+                            console.error('Error navigating to upload form:', error);
+                            // Fallback: force reload
+                            window.location.reload();
+                        }
+                    }
+
+                    function returnToDashboard() {
+                        // Navigate to NetSuite home screen
+                        try {
+                            console.log('Navigating to NetSuite dashboard');
+                            window.location.href = '/app/center/homepage.nl';
+                        } catch (error) {
+                            console.error('Error returning to dashboard:', error);
+                            // Fallback to general center
+                            window.location.href = '/app/center/';
+                        }
+                    }
+
+                    function viewRecord() {
+                        // Navigate to expense record if available
+                        try {
+                            const recordId = '${details.expenseRecordId || ''}';
+                            if (recordId) {
+                                window.location.href = '/app/common/custom/custrecordentry.nl?rectype=customrecord_ains_expense_capture&id=' + recordId;
+                            } else {
+                                console.log('No record ID available');
+                                returnToDashboard();
+                            }
+                        } catch (error) {
+                            console.error('Error navigating to record:', error);
+                            returnToDashboard();
+                        }
+                    }
+
+                    // Log page load for debugging
+                    console.log('Success page loaded with details:', {
+                        fileName: '${details.fileName}',
+                        trackingId: '${details.trackingId}',
+                        isEmployeeCenter: ${details.isEmployeeCenter || false}
+                    });
+                </script>
+            </body>
+            </html>
         `;
 
-        // Add action buttons
-        form.addButton({
-            id: 'btn_upload_another',
-            label: 'Upload Another Receipt',
-            functionName: 'uploadAnother'
-        });
-
-        if (details.isEmployeeCenter) {
-            form.addButton({
-                id: 'btn_return_dashboard',
-                label: 'Return to Dashboard',
-                functionName: 'returnToDashboard'
-            });
-        } else {
-            form.addButton({
-                id: 'btn_view_record',
-                label: 'View Record',
-                functionName: `viewRecord(${details.expenseRecordId})`
-            });
-        }
-
-        // Add client script for button actions
-        form.clientScriptModulePath = '../ClientScripts/AINS_CS_ReceiptUploadSuccess.js';
-
-        context.response.writePage(form);
+        // Write the HTML response directly
+        context.response.write(htmlContent);
     }
 
     /**
@@ -1864,39 +2331,241 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
      * @param {Object} context - Request context
      */
     function showRecentFileNotFoundPage(context) {
-        const form = ui.createForm({
-            title: 'File Not Found'
-        });
+        // Use simple HTML response for consistent design
+        const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>File Not Found - NetSuite</title>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    :root {
+                        --nsn-uif-redwood-color-light-neutral-0: rgb(255, 255, 255);
+                        --nsn-uif-redwood-color-light-neutral-10: rgb(251, 249, 248);
+                        --nsn-uif-redwood-color-light-neutral-20: rgb(245, 244, 242);
+                        --nsn-uif-redwood-color-light-brand-100: rgb(34, 126, 158);
+                        --nsn-uif-redwood-color-light-brand-120: rgb(54, 103, 125);
+                        --nsn-uif-redwood-color-light-text-primary: rgb(22, 21, 19);
+                        --nsn-uif-redwood-color-light-text-secondary: rgba(22, 21, 19, 0.7);
+                        --nsn-uif-redwood-color-light-border-divider: rgba(22, 21, 19, 0.12);
+                        --nsn-uif-redwood-color-light-warning-100: rgb(255, 193, 7);
+                        --nsn-uif-redwood-color-light-warning-10: rgb(255, 252, 235);
+                        --nsn-uif-redwood-size-s: 16px;
+                        --nsn-uif-redwood-size-m: 24px;
+                        --nsn-uif-redwood-border-rounded-corners: 6px;
+                        --nsn-uif-redwood-shadow-small: 0 4px 8px 0 rgba(0, 0, 0, 0.16);
+                    }
 
-        const errorField = form.addField({
-            id: 'error_message',
-            type: ui.FieldType.INLINEHTML,
-            label: 'Error'
-        });
+                    body {
+                        font-family: 'Oracle Sans', 'Helvetica Neue', sans-serif;
+                        background-color: var(--nsn-uif-redwood-color-light-neutral-10);
+                        margin: 0;
+                        padding: 20px;
+                        line-height: 1.5;
+                    }
 
-        errorField.defaultValue = `
-            <div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; border-radius: 5px; margin: 10px 0;">
-                <h3 style="margin-top: 0;">⚠️ File Not Found</h3>
-                <p>Unable to locate the recently uploaded file. This may be due to:</p>
-                <ul>
-                    <li>File upload was not completed successfully</li>
-                    <li>File is still being processed by NetSuite</li>
-                    <li>File was uploaded to a different location</li>
-                </ul>
-                <p>Please try uploading your receipt again.</p>
-            </div>
+                    .container {
+                        max-width: 600px;
+                        margin: 0 auto;
+                        background-color: var(--nsn-uif-redwood-color-light-neutral-0);
+                        border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                        box-shadow: var(--nsn-uif-redwood-shadow-small);
+                        overflow: hidden;
+                    }
+
+                    .header {
+                        background-color: var(--nsn-uif-redwood-color-light-warning-100);
+                        color: var(--nsn-uif-redwood-color-light-text-primary);
+                        padding: var(--nsn-uif-redwood-size-m);
+                        text-align: center;
+                    }
+
+                    .header h1 {
+                        margin: 0;
+                        font-size: 24px;
+                        font-weight: 600;
+                    }
+
+                    .content {
+                        padding: var(--nsn-uif-redwood-size-m);
+                    }
+
+                    .warning-container {
+                        background-color: var(--nsn-uif-redwood-color-light-warning-10);
+                        border: 1px solid var(--nsn-uif-redwood-color-light-warning-100);
+                        border-left: 4px solid var(--nsn-uif-redwood-color-light-warning-100);
+                        border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                        padding: var(--nsn-uif-redwood-size-m);
+                        margin: var(--nsn-uif-redwood-size-s) 0;
+                    }
+
+                    .warning-header {
+                        font-size: 20px;
+                        font-weight: 600;
+                        color: var(--nsn-uif-redwood-color-light-text-primary);
+                        margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
+                    }
+
+                    .warning-header::before {
+                        content: "⚠️";
+                        margin-right: 8px;
+                    }
+
+                    .warning-message {
+                        font-size: 16px;
+                        color: var(--nsn-uif-redwood-color-light-text-primary);
+                        margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
+                    }
+
+                    .warning-list {
+                        background-color: var(--nsn-uif-redwood-color-light-neutral-0);
+                        padding: 12px;
+                        border-radius: 4px;
+                        border: 1px dashed var(--nsn-uif-redwood-color-light-warning-100);
+                        margin: var(--nsn-uif-redwood-size-s) 0;
+                    }
+
+                    .warning-list ul {
+                        margin: 0;
+                        padding-left: 20px;
+                    }
+
+                    .warning-list li {
+                        margin: 4px 0;
+                        color: var(--nsn-uif-redwood-color-light-text-secondary);
+                    }
+
+                    .warning-details {
+                        font-size: 14px;
+                        color: var(--nsn-uif-redwood-color-light-text-secondary);
+                        margin: 0;
+                        line-height: 1.5;
+                    }
+
+                    .action-buttons {
+                        margin: var(--nsn-uif-redwood-size-m) 0 0 0;
+                        display: flex;
+                        gap: var(--nsn-uif-redwood-size-s);
+                        justify-content: center;
+                        flex-wrap: wrap;
+                    }
+
+                    .action-btn {
+                        background-color: var(--nsn-uif-redwood-color-light-brand-120);
+                        color: white;
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                        font-size: 14px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        box-shadow: var(--nsn-uif-redwood-shadow-small);
+                        transition: all 0.2s ease;
+                        text-decoration: none;
+                        display: inline-block;
+                        min-width: 160px;
+                    }
+
+                    .action-btn:hover {
+                        background-color: var(--nsn-uif-redwood-color-light-brand-100);
+                        transform: translateY(-1px);
+                        box-shadow: 0 6px 12px 0 rgba(0, 0, 0, 0.2);
+                    }
+
+                    .action-btn.secondary {
+                        background-color: var(--nsn-uif-redwood-color-light-neutral-20);
+                        color: var(--nsn-uif-redwood-color-light-text-primary);
+                        border: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
+                    }
+
+                    .action-btn.secondary:hover {
+                        background-color: var(--nsn-uif-redwood-color-light-neutral-10);
+                        transform: translateY(-1px);
+                    }
+
+                    @media (max-width: 600px) {
+                        .container {
+                            margin: 0;
+                            border-radius: 0;
+                        }
+
+                        body {
+                            padding: 15px;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>📄 File Not Found</h1>
+                    </div>
+
+                    <div class="content">
+                        <div class="warning-container">
+                            <div class="warning-header">File Not Found</div>
+                            <div class="warning-message">
+                                Unable to locate the recently uploaded file. This may be due to:
+                            </div>
+                            <div class="warning-list">
+                                <ul>
+                                    <li>File upload was not completed successfully</li>
+                                    <li>File is still being processed by NetSuite</li>
+                                    <li>File was uploaded to a different location</li>
+                                </ul>
+                            </div>
+                            <div class="warning-details">
+                                Please try uploading your receipt again.
+                            </div>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button type="button" onclick="tryAgain()" class="action-btn">
+                                🔄 Try Again
+                            </button>
+                            <button type="button" onclick="returnToDashboard()" class="action-btn secondary">
+                                🏠 Return to Dashboard
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    function tryAgain() {
+                        // Navigate back to upload page (GET request)
+                        try {
+                            const baseUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
+                            console.log('Navigating to upload page:', baseUrl);
+                            window.location.href = baseUrl;
+                        } catch (error) {
+                            console.error('Error navigating to upload form:', error);
+                            // Fallback: force reload
+                            window.location.reload();
+                        }
+                    }
+
+                    function returnToDashboard() {
+                        // Navigate to NetSuite home screen
+                        try {
+                            console.log('Navigating to NetSuite dashboard');
+                            window.location.href = '/app/center/homepage.nl';
+                        } catch (error) {
+                            console.error('Error returning to dashboard:', error);
+                            // Fallback to general center
+                            window.location.href = '/app/center/';
+                        }
+                    }
+
+                    // Log page load for debugging
+                    console.log('File not found page loaded');
+                </script>
+            </body>
+            </html>
         `;
 
-        form.addButton({
-            id: 'btn_try_again',
-            label: 'Try Again',
-            functionName: 'uploadAnother'
-        });
-
-        // Add client script
-        form.clientScriptModulePath = '../ClientScripts/AINS_CS_ReceiptUpload.js';
-
-        context.response.writePage(form);
+        // Write the HTML response directly
+        context.response.write(htmlContent);
     }
 
     /**
@@ -1905,34 +2574,220 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
      * @param {Error} error - Error object
      */
     function showErrorPage(context, error) {
-        const form = ui.createForm({
-            title: 'Upload Error'
-        });
+        // Use simple HTML response for consistent design
+        const htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Upload Error - NetSuite</title>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    :root {
+                        --nsn-uif-redwood-color-light-neutral-0: rgb(255, 255, 255);
+                        --nsn-uif-redwood-color-light-neutral-10: rgb(251, 249, 248);
+                        --nsn-uif-redwood-color-light-neutral-20: rgb(245, 244, 242);
+                        --nsn-uif-redwood-color-light-brand-100: rgb(34, 126, 158);
+                        --nsn-uif-redwood-color-light-brand-120: rgb(54, 103, 125);
+                        --nsn-uif-redwood-color-light-text-primary: rgb(22, 21, 19);
+                        --nsn-uif-redwood-color-light-text-secondary: rgba(22, 21, 19, 0.7);
+                        --nsn-uif-redwood-color-light-border-divider: rgba(22, 21, 19, 0.12);
+                        --nsn-uif-redwood-color-light-danger-100: rgb(184, 40, 40);
+                        --nsn-uif-redwood-color-light-danger-10: rgb(255, 243, 243);
+                        --nsn-uif-redwood-size-s: 16px;
+                        --nsn-uif-redwood-size-m: 24px;
+                        --nsn-uif-redwood-border-rounded-corners: 6px;
+                        --nsn-uif-redwood-shadow-small: 0 4px 8px 0 rgba(0, 0, 0, 0.16);
+                    }
 
-        const errorField = form.addField({
-            id: 'error_message',
-            type: ui.FieldType.INLINEHTML,
-            label: 'Error'
-        });
+                    body {
+                        font-family: 'Oracle Sans', 'Helvetica Neue', sans-serif;
+                        background-color: var(--nsn-uif-redwood-color-light-neutral-10);
+                        margin: 0;
+                        padding: 20px;
+                        line-height: 1.5;
+                    }
 
-        errorField.defaultValue = `
-            <div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 15px; border-radius: 5px; margin: 10px 0;">
-                <h3 style="margin-top: 0;">❌ Upload Error</h3>
-                <p><strong>Error:</strong> ${error.message}</p>
-                <p>Please check your file and try again. If the problem persists, contact your system administrator.</p>
-            </div>
+                    .container {
+                        max-width: 600px;
+                        margin: 0 auto;
+                        background-color: var(--nsn-uif-redwood-color-light-neutral-0);
+                        border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                        box-shadow: var(--nsn-uif-redwood-shadow-small);
+                        overflow: hidden;
+                    }
+
+                    .header {
+                        background-color: var(--nsn-uif-redwood-color-light-danger-100);
+                        color: white;
+                        padding: var(--nsn-uif-redwood-size-m);
+                        text-align: center;
+                    }
+
+                    .header h1 {
+                        margin: 0;
+                        font-size: 24px;
+                        font-weight: 600;
+                    }
+
+                    .content {
+                        padding: var(--nsn-uif-redwood-size-m);
+                    }
+
+                    .error-container {
+                        background-color: var(--nsn-uif-redwood-color-light-danger-10);
+                        border: 1px solid var(--nsn-uif-redwood-color-light-danger-100);
+                        border-left: 4px solid var(--nsn-uif-redwood-color-light-danger-100);
+                        border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                        padding: var(--nsn-uif-redwood-size-m);
+                        margin: var(--nsn-uif-redwood-size-s) 0;
+                    }
+
+                    .error-header {
+                        font-size: 20px;
+                        font-weight: 600;
+                        color: var(--nsn-uif-redwood-color-light-danger-100);
+                        margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
+                    }
+
+                    .error-header::before {
+                        content: "❌";
+                        margin-right: 8px;
+                    }
+
+                    .error-message {
+                        font-size: 16px;
+                        color: var(--nsn-uif-redwood-color-light-text-primary);
+                        margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
+                        background-color: var(--nsn-uif-redwood-color-light-neutral-0);
+                        padding: 12px;
+                        border-radius: 4px;
+                        border: 1px dashed var(--nsn-uif-redwood-color-light-danger-100);
+                    }
+
+                    .error-details {
+                        font-size: 14px;
+                        color: var(--nsn-uif-redwood-color-light-text-secondary);
+                        margin: 0;
+                        line-height: 1.5;
+                    }
+
+                    .action-buttons {
+                        margin: var(--nsn-uif-redwood-size-m) 0 0 0;
+                        display: flex;
+                        gap: var(--nsn-uif-redwood-size-s);
+                        justify-content: center;
+                        flex-wrap: wrap;
+                    }
+
+                    .action-btn {
+                        background-color: var(--nsn-uif-redwood-color-light-brand-120);
+                        color: white;
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                        font-size: 14px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        box-shadow: var(--nsn-uif-redwood-shadow-small);
+                        transition: all 0.2s ease;
+                        text-decoration: none;
+                        display: inline-block;
+                        min-width: 160px;
+                    }
+
+                    .action-btn:hover {
+                        background-color: var(--nsn-uif-redwood-color-light-brand-100);
+                        transform: translateY(-1px);
+                        box-shadow: 0 6px 12px 0 rgba(0, 0, 0, 0.2);
+                    }
+
+                    .action-btn.secondary {
+                        background-color: var(--nsn-uif-redwood-color-light-neutral-20);
+                        color: var(--nsn-uif-redwood-color-light-text-primary);
+                        border: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
+                    }
+
+                    .action-btn.secondary:hover {
+                        background-color: var(--nsn-uif-redwood-color-light-neutral-10);
+                        transform: translateY(-1px);
+                    }
+
+                    @media (max-width: 600px) {
+                        .container {
+                            margin: 0;
+                            border-radius: 0;
+                        }
+
+                        body {
+                            padding: 15px;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>⚠️ Upload Error</h1>
+                    </div>
+
+                    <div class="content">
+                        <div class="error-container">
+                            <div class="error-header">Upload Error</div>
+                            <div class="error-message">
+                                <strong>Error:</strong> ${error.message}
+                            </div>
+                            <div class="error-details">
+                                Please check your file and try again. If the problem persists, contact your system administrator.
+                            </div>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button type="button" onclick="tryAgain()" class="action-btn">
+                                🔄 Try Again
+                            </button>
+                            <button type="button" onclick="returnToDashboard()" class="action-btn secondary">
+                                🏠 Return to Dashboard
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    function tryAgain() {
+                        // Navigate back to upload page (GET request)
+                        try {
+                            const baseUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
+                            console.log('Navigating to upload page:', baseUrl);
+                            window.location.href = baseUrl;
+                        } catch (error) {
+                            console.error('Error navigating to upload form:', error);
+                            // Fallback: force reload
+                            window.location.reload();
+                        }
+                    }
+
+                    function returnToDashboard() {
+                        // Navigate to NetSuite home screen
+                        try {
+                            console.log('Navigating to NetSuite dashboard');
+                            window.location.href = '/app/center/homepage.nl';
+                        } catch (error) {
+                            console.error('Error returning to dashboard:', error);
+                            // Fallback to general center
+                            window.location.href = '/app/center/';
+                        }
+                    }
+
+                    // Log page load for debugging
+                    console.log('Error page loaded with message:', '${error.message}');
+                </script>
+            </body>
+            </html>
         `;
 
-        form.addButton({
-            id: 'btn_try_again',
-            label: 'Try Again',
-            functionName: 'uploadAnother'
-        });
-
-        // Add client script
-        form.clientScriptModulePath = '../ClientScripts/AINS_CS_ReceiptUpload.js';
-
-        context.response.writePage(form);
+        // Write the HTML response directly
+        context.response.write(htmlContent);
     }
 
     /**

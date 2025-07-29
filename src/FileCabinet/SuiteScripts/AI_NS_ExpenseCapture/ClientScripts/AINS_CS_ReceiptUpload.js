@@ -313,16 +313,24 @@ function(currentRecord, dialog, url) {
                     window.close();
                 }
             } else {
-                // Navigate to Employee Center home
-                window.location.href = '/app/center/userprefs.nl';
+                // Navigate to NetSuite home screen
+                window.location.href = '/app/center/homepage.nl';
             }
 
         } catch (error) {
             console.error('Error returning to dashboard:', error);
-            dialog.alert({
-                title: 'Navigation Error',
-                message: 'Unable to return to dashboard. Please use your browser navigation.'
-            });
+            // Fallback to general center
+            try {
+                window.location.href = '/app/center/';
+            } catch (fallbackError) {
+                console.error('Fallback navigation failed:', fallbackError);
+                // Last resort - try to go back
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    window.location.reload();
+                }
+            }
         }
     }
 

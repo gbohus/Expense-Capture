@@ -77,27 +77,40 @@ define(['N/url', 'N/runtime'], function(url, runtime) {
 
         } catch (error) {
             console.error('Error navigating to upload form:', error);
-            alert('Unable to navigate to upload form. Please try refreshing the page.');
+            // Fallback: try to navigate to upload page directly
+            try {
+                // Remove all query parameters to get clean Suitelet URL
+                const baseUrl = window.location.protocol + '//' + window.location.host + window.location.pathname;
+                const cleanUrl = baseUrl.split('?')[0];
+                window.location.href = cleanUrl;
+            } catch (fallbackError) {
+                console.error('Fallback navigation failed:', fallbackError);
+                alert('Unable to navigate to upload form. Please try refreshing the page.');
+            }
         }
     }
 
     /**
-     * Return to Employee Center Dashboard
+     * Return to NetSuite Dashboard
      */
     function returnToDashboard() {
         try {
-            // Use NetSuite's standard Employee Center URL
-            var dashboardUrl = '/app/center/card.nl?sc=-29';
-            window.location.href = dashboardUrl;
-
+            // Navigate to NetSuite home screen
+            window.location.href = '/app/center/homepage.nl';
         } catch (error) {
             console.error('Error returning to dashboard:', error);
-            // Fallback - try to go back
-            if (window.history.length > 1) {
-                window.history.back();
-            } else {
-                // Last resort - reload the page
-                window.location.reload();
+            // Fallback to general center
+            try {
+                window.location.href = '/app/center/';
+            } catch (fallbackError) {
+                console.error('Fallback navigation failed:', fallbackError);
+                // Last resort - try to go back
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else {
+                    // Final fallback - reload the page
+                    window.location.reload();
+                }
             }
         }
     }
