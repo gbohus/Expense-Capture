@@ -273,11 +273,16 @@ function(runtime, log, url, query) {
                 query: queryString
             }).asMappedResults();
 
-            return results.map(result => ({
+            const categories = results.map(result => ({
                 id: result.id,
                 name: result.name,
                 description: result.description || ''
             }));
+
+            // Debug logging to see what categories are loaded
+            log.debug('getExpenseCategories', `Loaded ${categories.length} categories: ${JSON.stringify(categories)}`);
+
+            return categories;
 
         } catch (error) {
             log.error('getExpenseCategories', `Error loading expense categories: ${error.message}`);

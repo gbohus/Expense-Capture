@@ -92,63 +92,27 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
      * Render the file upload form
      * @param {Object} context - Request context
      */
-    function renderUploadForm(context) {
+        function renderUploadForm(context) {
         const currentUser = commonLib.getCurrentUser();
         const isEmployeeCenter = commonLib.isEmployeeCenterRole();
 
-        // Check if we have an uploaded file in the session/parameters
-        let uploadedFileId = context.request.parameters.uploaded_file_id;
-        let uploadedFileName = context.request.parameters.uploaded_file_name;
-
         commonLib.logOperation('render_upload_form', {
             userId: currentUser.id,
-            isEmployeeCenter: isEmployeeCenter,
-            hasUploadedFile: !!uploadedFileId
+            isEmployeeCenter: isEmployeeCenter
         });
 
-        // Create form
+        // Create NetSuite form (keeps toolbar) with clean content
         const form = ui.createForm({
             title: 'AI NS Expense Receipt Upload'
         });
 
-        // Add client script for form validation
+        // Add client script
         form.clientScriptModulePath = '../ClientScripts/AINS_CS_ReceiptUpload.js';
 
-        // Add CSS styling
-        addFormStyling(form);
+        // Add the clean upload interface
+        renderCleanUploadInterface(form, currentUser);
 
-        // Instructions section
-        const instructionsField = form.addField({
-            id: 'instructions',
-            type: ui.FieldType.INLINEHTML,
-            label: 'Instructions'
-        });
-
-        instructionsField.defaultValue = createInstructionsHTML();
-
-        if (!uploadedFileId) {
-            // Step 1: Show upload interface
-            renderUploadInterface(form, currentUser);
-        } else {
-            // Step 2: Show processing interface
-            renderProcessingInterface(form, currentUser, uploadedFileId, uploadedFileName);
-        }
-
-        // Status section for displaying recent uploads
-        if (context.request.parameters.showRecent !== 'false') {
-            addRecentUploadsSection(form, currentUser.id);
-        }
-
-        // Cancel button for Employee Center
-        if (isEmployeeCenter) {
-            form.addButton({
-                id: 'btn_cancel',
-                label: 'Return to Dashboard',
-                functionName: 'returnToDashboard'
-            });
-        }
-
-        // Add hidden fields for processing
+        // Hidden user ID for processing
         form.addField({
             id: 'user_id',
             type: ui.FieldType.TEXT,
@@ -157,25 +121,383 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
             displayType: ui.FieldDisplayType.HIDDEN
         }).defaultValue = currentUser.id;
 
-        if (uploadedFileId) {
-            form.addField({
-                id: 'uploaded_file_id',
-                type: ui.FieldType.TEXT,
-                label: 'Uploaded File ID'
-            }).updateDisplayType({
-                displayType: ui.FieldDisplayType.HIDDEN
-            }).defaultValue = uploadedFileId;
-
-            form.addField({
-                id: 'uploaded_file_name',
-                type: ui.FieldType.TEXT,
-                label: 'Uploaded File Name'
-            }).updateDisplayType({
-                displayType: ui.FieldDisplayType.HIDDEN
-            }).defaultValue = uploadedFileName;
-        }
-
         context.response.writePage(form);
+    }
+
+        /**
+     * Render clean upload interface within NetSuite form
+     * @param {Form} form - NetSuite form object
+     * @param {Object} currentUser - Current user details
+     */
+    function renderCleanUploadInterface(form, currentUser) {
+        const accountId = runtime.accountId;
+        const baseUrl = `https://${accountId}.app.netsuite.com`;
+        const expenseUploadUrl = `${baseUrl}/app/common/media/expensereportmediaitem.nl?target=expense:expmediaitem&label=AI+Receipt+Processing&reportOwner=${currentUser.id}&entity=${currentUser.id}`;
+
+        // Log for debugging
+        commonLib.logOperation('debug_url_construction', {
+            accountId: accountId,
+            currentUserId: currentUser.id,
+            baseUrl: baseUrl,
+            expenseUploadUrl: expenseUploadUrl
+        });
+
+        // Create single field with all content
+        const uploadField = form.addField({
+            id: 'upload_interface',
+            type: ui.FieldType.INLINEHTML,
+            label: 'Receipt Upload'
+        });
+
+        uploadField.defaultValue = `
+            <style>
+                :root {
+                    --nsn-uif-redwood-color-light-neutral-0: rgb(255, 255, 255);
+                    --nsn-uif-redwood-color-light-neutral-10: rgb(251, 249, 248);
+                    --nsn-uif-redwood-color-light-neutral-20: rgb(245, 244, 242);
+                    --nsn-uif-redwood-color-light-brand-100: rgb(34, 126, 158);
+                    --nsn-uif-redwood-color-light-brand-120: rgb(54, 103, 125);
+                    --nsn-uif-redwood-color-light-text-primary: rgb(22, 21, 19);
+                    --nsn-uif-redwood-color-light-text-secondary: rgba(22, 21, 19, 0.7);
+                    --nsn-uif-redwood-color-light-border-divider: rgba(22, 21, 19, 0.12);
+                    --nsn-uif-redwood-size-s: 16px;
+                    --nsn-uif-redwood-size-m: 24px;
+                    --nsn-uif-redwood-border-rounded-corners: 6px;
+                    --nsn-uif-redwood-shadow-small: 0 4px 8px 0 rgba(0, 0, 0, 0.16);
+                }
+
+                .upload-container {
+                    background-color: var(--nsn-uif-redwood-color-light-neutral-0);
+                    border: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                    padding: var(--nsn-uif-redwood-size-m);
+                    margin: var(--nsn-uif-redwood-size-s) 0;
+                    text-align: center;
+                    box-shadow: var(--nsn-uif-redwood-shadow-small);
+                }
+
+                .upload-title {
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: var(--nsn-uif-redwood-color-light-text-primary);
+                    margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
+                }
+
+                .upload-subtitle {
+                    font-size: 14px;
+                    color: var(--nsn-uif-redwood-color-light-text-secondary);
+                    margin: 0 0 var(--nsn-uif-redwood-size-m) 0;
+                }
+
+                .choose-file-btn {
+                    background-color: var(--nsn-uif-redwood-color-light-brand-120);
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                    font-size: 14px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    box-shadow: var(--nsn-uif-redwood-shadow-small);
+                    transition: background-color 0.2s ease;
+                }
+
+                .choose-file-btn:hover {
+                    background-color: var(--nsn-uif-redwood-color-light-brand-100);
+                }
+
+                .upload-success {
+                    background-color: var(--nsn-uif-redwood-color-light-neutral-10);
+                    border: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                    padding: var(--nsn-uif-redwood-size-s);
+                    margin: var(--nsn-uif-redwood-size-s) 0;
+                    text-align: left;
+                    display: none;
+                }
+
+                .success-title {
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: var(--nsn-uif-redwood-color-light-text-primary);
+                    margin: 0 0 8px 0;
+                }
+
+                .file-detail {
+                    font-size: 14px;
+                    color: var(--nsn-uif-redwood-color-light-text-secondary);
+                    margin: 4px 0;
+                }
+
+                .media-id {
+                    font-family: 'Courier New', monospace;
+                    background-color: var(--nsn-uif-redwood-color-light-neutral-20);
+                    padding: 2px 6px;
+                    border-radius: 3px;
+                    font-size: 12px;
+                }
+
+                .process-container {
+                    margin: var(--nsn-uif-redwood-size-m) 0;
+                    padding: var(--nsn-uif-redwood-size-s);
+                    background-color: var(--nsn-uif-redwood-color-light-neutral-10);
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                    border: 1px dashed var(--nsn-uif-redwood-color-light-brand-100);
+                    text-align: center;
+                }
+
+                .process-btn {
+                    background-color: var(--nsn-uif-redwood-color-light-brand-100);
+                    color: white;
+                    border: none;
+                    padding: 14px 28px;
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                    font-size: 16px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    box-shadow: var(--nsn-uif-redwood-shadow-small);
+                    transition: background-color 0.2s ease;
+                }
+
+                .process-btn:hover {
+                    background-color: var(--nsn-uif-redwood-color-light-brand-120);
+                }
+
+                .my-app-modal-backdrop {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(22, 21, 19, 0.4);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 1500;
+                }
+
+                .my-app-modal-dialog {
+                    background-color: var(--nsn-uif-redwood-color-light-neutral-0);
+                    border: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                    box-shadow: 0 6px 12px 0px rgba(0, 0, 0, 0.2);
+                    overflow: hidden;
+                    min-width: 350px;
+                    max-width: 90%;
+                    max-height: 90%;
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                .my-app-modal-header {
+                    background-color: var(--nsn-uif-redwood-color-light-brand-120);
+                    padding: 8px var(--nsn-uif-redwood-size-s);
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: white;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+
+                .close-button {
+                    background: none;
+                    border: none;
+                    color: white;
+                    font-size: 18px;
+                    cursor: pointer;
+                    padding: 4px;
+                    border-radius: 4px;
+                    line-height: 1;
+                }
+
+                .close-button:hover {
+                    background-color: rgba(255, 255, 255, 0.1);
+                }
+            </style>
+
+            <div class="upload-container">
+                <div class="upload-title">AI Receipt Processing</div>
+                <div class="upload-subtitle">Upload your receipt for automatic expense data extraction</div>
+
+                <button type="button" id="btn_choose_file" onclick="openExpenseUpload()" class="choose-file-btn">
+                    📁 Choose File
+                </button>
+
+                <div id="upload_status" class="upload-success">
+                    <div class="success-title">✅ File Uploaded Successfully</div>
+                    <div class="file-detail"><strong>File:</strong> <span id="file_name_display"></span></div>
+                    <div class="file-detail"><strong>ID:</strong> <span id="media_id_display" class="media-id"></span></div>
+                </div>
+            </div>
+
+            <!-- Modal overlay -->
+            <div id="upload_modal" class="my-app-modal-backdrop" style="display: none;">
+                <div class="my-app-modal-dialog" style="width: 90%; max-width: 800px; height: 80%; max-height: 600px;">
+                    <div class="my-app-modal-header">
+                        <span>📸 Upload Receipt</span>
+                        <button onclick="closeUploadModal()" class="close-button">×</button>
+                    </div>
+                    <iframe id="modal_iframe" src="${expenseUploadUrl}" style="width: 100%; height: calc(100% - 60px); border: none; background: white;"></iframe>
+                </div>
+            </div>
+
+            <script>
+                let uploadedMediaId = null;
+                let uploadedFileName = null;
+
+                function openExpenseUpload() {
+                    document.getElementById('upload_modal').style.display = 'flex';
+                    document.body.style.overflow = 'hidden';
+                }
+
+                function closeUploadModal() {
+                    document.getElementById('upload_modal').style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                }
+
+                // Listen for messages from the iframe
+                window.addEventListener('message', function(event) {
+                    console.log('Received message:', event);
+
+                    if (event.data && event.data.type === 'expense_upload_complete') {
+                        uploadedMediaId = event.data.mediaId;
+                        uploadedFileName = event.data.fileName;
+
+                        document.getElementById('file_name_display').textContent = uploadedFileName;
+                        document.getElementById('media_id_display').textContent = uploadedMediaId;
+                        document.getElementById('upload_status').style.display = 'block';
+
+                        closeUploadModal();
+                        enableProcessButton();
+
+                        console.log('Upload completed successfully:', {
+                            mediaId: uploadedMediaId,
+                            fileName: uploadedFileName
+                        });
+                    }
+                });
+
+                // Monitor iframe URL changes (enhanced monitoring)
+                function monitorIframe() {
+                    const iframe = document.getElementById('modal_iframe');
+                    if (iframe) {
+                        try {
+                            const iframeUrl = iframe.contentWindow.location.href;
+                            console.log('Iframe URL:', iframeUrl);
+
+                            if (iframeUrl.includes('optionid=')) {
+                                const urlParams = new URLSearchParams(iframeUrl.split('?')[1]);
+                                const optionId = urlParams.get('optionid');
+                                const optionName = urlParams.get('optionname');
+
+                                if (optionId) {
+                                    uploadedMediaId = optionId;
+                                    uploadedFileName = decodeURIComponent(optionName || 'receipt.pdf');
+
+                                    console.log('Successfully captured expense media:', {
+                                        mediaId: uploadedMediaId,
+                                        fileName: uploadedFileName
+                                    });
+
+                                    document.getElementById('file_name_display').textContent = uploadedFileName;
+                                    document.getElementById('media_id_display').textContent = uploadedMediaId;
+                                    document.getElementById('upload_status').style.display = 'block';
+
+                                    closeUploadModal();
+                                    enableProcessButton();
+                                }
+                            }
+                        } catch (e) {
+                            console.log('Cannot access iframe URL due to cross-origin policy (this is normal)');
+                        }
+                    }
+                }
+
+                let monitoringInterval = setInterval(monitorIframe, 1000);
+
+                setTimeout(function() {
+                    if (monitoringInterval) {
+                        clearInterval(monitoringInterval);
+                        console.log('Stopped iframe monitoring after 30 minutes');
+                    }
+                }, 30 * 60 * 1000);
+
+                function enableProcessButton() {
+                    if (!document.getElementById('btn_process_receipt')) {
+                        const buttonContainer = document.createElement('div');
+                        buttonContainer.className = 'process-container';
+
+                        const processButton = document.createElement('button');
+                        processButton.id = 'btn_process_receipt';
+                        processButton.type = 'button';
+                        processButton.className = 'process-btn';
+                        processButton.onclick = processUploadedReceipt;
+                        processButton.textContent = '🤖 Process Receipt with AI';
+
+                        buttonContainer.appendChild(processButton);
+
+                        const uploadContainer = document.querySelector('.upload-container');
+                        uploadContainer.parentNode.insertBefore(buttonContainer, uploadContainer.nextSibling);
+                    }
+                }
+
+                function processUploadedReceipt() {
+                    if (!uploadedMediaId) {
+                        alert('No file uploaded. Please choose a file first.');
+                        return;
+                    }
+
+                    // Create form and submit for processing
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = window.location.href;
+
+                    const mediaIdInput = document.createElement('input');
+                    mediaIdInput.type = 'hidden';
+                    mediaIdInput.name = 'uploaded_media_id';
+                    mediaIdInput.value = uploadedMediaId;
+                    form.appendChild(mediaIdInput);
+
+                    const fileNameInput = document.createElement('input');
+                    fileNameInput.type = 'hidden';
+                    fileNameInput.name = 'uploaded_file_name';
+                    fileNameInput.value = uploadedFileName;
+                    form.appendChild(fileNameInput);
+
+                    const actionInput = document.createElement('input');
+                    actionInput.type = 'hidden';
+                    actionInput.name = 'action';
+                    actionInput.value = 'process_expense_media';
+                    form.appendChild(actionInput);
+
+                    const userIdInput = document.createElement('input');
+                    userIdInput.type = 'hidden';
+                    userIdInput.name = 'user_id';
+                    userIdInput.value = '${currentUser.id}';
+                    form.appendChild(userIdInput);
+
+                    document.body.appendChild(form);
+
+                    showProcessingMessage('Starting AI processing of your receipt...');
+
+                    form.submit();
+                }
+
+                function showProcessingMessage(message) {
+                    const overlay = document.createElement('div');
+                    overlay.id = 'processing-overlay';
+                    overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10001; display: flex; align-items: center; justify-content: center;';
+
+                    const messageBox = document.createElement('div');
+                    messageBox.style.cssText = 'background: white; padding: 30px; border-radius: 6px; text-align: center; max-width: 400px; box-shadow: 0 6px 12px 0px rgba(0, 0, 0, 0.2);';
+                    messageBox.innerHTML = '<div style="font-size: 18px; color: rgb(22, 21, 19); margin-bottom: 15px;">🔄 Processing...</div><div style="margin-bottom: 15px;">' + message + '</div><div style="font-size: 12px; color: rgba(22, 21, 19, 0.7);">Please wait while we process your receipt.</div>';
+
+                    overlay.appendChild(messageBox);
+                    document.body.appendChild(overlay);
+                }
+            </script>
+        `;
     }
 
     /**
@@ -206,40 +528,140 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
             expenseUploadUrl: expenseUploadUrl
         });
 
+                // Add link to CSS file
+        form.addField({
+            id: 'custom_css_link',
+            type: ui.FieldType.INLINEHTML,
+            label: 'Styles'
+        }).updateDisplayType({
+            displayType: ui.FieldDisplayType.HIDDEN
+        }).defaultValue = '<link rel="stylesheet" type="text/css" href="../Libraries/AINS_LIB_Styles.css">';
+
         iframeUploadField.defaultValue = `
-            <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 20px; margin: 15px 0;">
-                <h3 style="color: #1f4e79; margin-top: 0;">📎 Upload Your Receipt</h3>
-                <p style="margin-bottom: 15px;">Click "Choose File" below to upload your receipt using NetSuite's secure expense system.</p>
+            <style>
+                :root {
+                    --nsn-uif-redwood-color-light-neutral-0: rgb(255, 255, 255);
+                    --nsn-uif-redwood-color-light-neutral-10: rgb(251, 249, 248);
+                    --nsn-uif-redwood-color-light-neutral-20: rgb(245, 244, 242);
+                    --nsn-uif-redwood-color-light-brand-100: rgb(34, 126, 158);
+                    --nsn-uif-redwood-color-light-brand-120: rgb(54, 103, 125);
+                    --nsn-uif-redwood-color-light-text-primary: rgb(22, 21, 19);
+                    --nsn-uif-redwood-color-light-text-secondary: rgba(22, 21, 19, 0.7);
+                    --nsn-uif-redwood-color-light-border-divider: rgba(22, 21, 19, 0.12);
+                    --nsn-uif-redwood-size-s: 16px;
+                    --nsn-uif-redwood-size-m: 24px;
+                    --nsn-uif-redwood-border-rounded-corners: 6px;
+                    --nsn-uif-redwood-shadow-small: 0 4px 8px 0 rgba(0, 0, 0, 0.16);
+                }
 
-                <div style="margin: 15px 0;">
-                    <button type="button" id="btn_choose_file" onclick="openExpenseUpload()"
-                            style="background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 5px; font-size: 16px; cursor: pointer;">
-                        📁 Choose File
-                    </button>
-                </div>
+                .upload-container {
+                    background-color: var(--nsn-uif-redwood-color-light-neutral-0);
+                    border: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                    padding: var(--nsn-uif-redwood-size-m);
+                    margin: var(--nsn-uif-redwood-size-s) 0;
+                    text-align: center;
+                }
 
-                <div id="upload_status" style="margin: 15px 0; display: none;">
-                    <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 10px; border-radius: 3px;">
-                        <strong>✅ File Uploaded Successfully!</strong><br>
-                        <span id="file_name_display"></span><br>
-                        <em>Click "Process Receipt" below to extract expense data.</em>
-                    </div>
-                </div>
+                .upload-title {
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: var(--nsn-uif-redwood-color-light-text-primary);
+                    margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
+                }
 
-                <div style="background: #e9ecef; border-radius: 3px; padding: 10px; margin: 10px 0;">
-                    <strong>📋 Supported Formats:</strong> ${CONSTANTS.SUPPORTED_FILE_TYPES.join(', ').toUpperCase()}<br>
-                    <strong>📏 Maximum Size:</strong> ${commonLib.getScriptParameter(CONSTANTS.SCRIPT_PARAMS.MAX_FILE_SIZE, CONSTANTS.DEFAULT_VALUES.MAX_FILE_SIZE_MB)}MB<br>
-                    <strong>🤖 AI Processing:</strong> Automatically extracts vendor, amount, date, and category
-                </div>
-                <p style="font-size: 12px; color: #6c757d; margin-bottom: 0;">
-                    💡 <strong>Tip:</strong> Clear, well-lit images work best for accurate data extraction
-                </p>
+                .upload-subtitle {
+                    font-size: 14px;
+                    color: var(--nsn-uif-redwood-color-light-text-secondary);
+                    margin: 0 0 var(--nsn-uif-redwood-size-m) 0;
+                }
 
-                <div style="background: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 10px; border-radius: 3px; margin: 10px 0; font-size: 12px;">
-                    <strong>🔍 Debug Info:</strong><br>
-                    Account ID: ${accountId}<br>
-                    User ID: ${currentUser.id}<br>
-                    Generated URL: <span style="word-break: break-all; font-family: monospace;">${expenseUploadUrl}</span>
+                .choose-file-btn {
+                    background-color: var(--nsn-uif-redwood-color-light-brand-120);
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                    font-size: 14px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    box-shadow: var(--nsn-uif-redwood-shadow-small);
+                    transition: background-color 0.2s ease;
+                }
+
+                .choose-file-btn:hover {
+                    background-color: var(--nsn-uif-redwood-color-light-brand-100);
+                }
+
+                .upload-success {
+                    background-color: var(--nsn-uif-redwood-color-light-neutral-10);
+                    border: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                    padding: var(--nsn-uif-redwood-size-s);
+                    margin: var(--nsn-uif-redwood-size-s) 0;
+                    text-align: left;
+                    display: none;
+                }
+
+                .success-title {
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: var(--nsn-uif-redwood-color-light-text-primary);
+                    margin: 0 0 8px 0;
+                }
+
+                .file-detail {
+                    font-size: 14px;
+                    color: var(--nsn-uif-redwood-color-light-text-secondary);
+                    margin: 4px 0;
+                }
+
+                .media-id {
+                    font-family: 'Courier New', monospace;
+                    background-color: var(--nsn-uif-redwood-color-light-neutral-20);
+                    padding: 2px 6px;
+                    border-radius: 3px;
+                    font-size: 12px;
+                }
+
+                .process-container {
+                    margin: var(--nsn-uif-redwood-size-m) 0;
+                    padding: var(--nsn-uif-redwood-size-s);
+                    background-color: var(--nsn-uif-redwood-color-light-neutral-10);
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                    border: 1px dashed var(--nsn-uif-redwood-color-light-brand-100);
+                }
+
+                .process-btn {
+                    background-color: var(--nsn-uif-redwood-color-light-brand-100);
+                    color: white;
+                    border: none;
+                    padding: 14px 28px;
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                    font-size: 16px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    box-shadow: var(--nsn-uif-redwood-shadow-small);
+                    transition: background-color 0.2s ease;
+                }
+
+                .process-btn:hover {
+                    background-color: var(--nsn-uif-redwood-color-light-brand-120);
+                }
+            </style>
+
+            <div class="upload-container">
+                <div class="upload-title">AI Receipt Processing</div>
+                <div class="upload-subtitle">Upload your receipt for automatic expense data extraction</div>
+
+                <button type="button" id="btn_choose_file" onclick="openExpenseUpload()" class="choose-file-btn">
+                    📁 Choose File
+                </button>
+
+                <div id="upload_status" class="upload-success">
+                    <div class="success-title">✅ File Uploaded Successfully</div>
+                    <div class="file-detail"><strong>File:</strong> <span id="file_name_display"></span></div>
+                    <div class="file-detail"><strong>ID:</strong> <span id="media_id_display" class="media-id"></span></div>
                 </div>
             </div>
 
@@ -247,13 +669,13 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
             <iframe id="expense_upload_iframe" src="" style="display: none; width: 100%; height: 600px; border: 1px solid #ccc; border-radius: 5px;"></iframe>
 
             <!-- Modal overlay -->
-            <div id="upload_modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000;">
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 0; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); width: 90%; max-width: 800px; height: 80%; max-height: 600px;">
-                    <div style="background: #1f4e79; color: white; padding: 15px; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center;">
-                        <h3 style="margin: 0;">📸 Upload Receipt - NetSuite Expense System</h3>
-                        <button onclick="closeUploadModal()" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">×</button>
+            <div id="upload_modal" class="my-app-modal-backdrop" style="display: none;">
+                <div class="my-app-modal-dialog" style="width: 90%; max-width: 800px; height: 80%; max-height: 600px;">
+                    <div class="my-app-modal-header">
+                        <span>📸 Upload Receipt</span>
+                        <button onclick="closeUploadModal()" class="close-button">×</button>
                     </div>
-                    <iframe id="modal_iframe" src="${expenseUploadUrl}" style="width: 100%; height: calc(100% - 60px); border: none;"></iframe>
+                    <iframe id="modal_iframe" src="${expenseUploadUrl}" style="width: 100%; height: calc(100% - 60px); border: none; background: white;"></iframe>
                 </div>
             </div>
 
@@ -271,7 +693,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
                     document.body.style.overflow = 'auto';
                 }
 
-                // Listen for messages from the iframe
+                                // Listen for messages from the iframe
                 window.addEventListener('message', function(event) {
                     console.log('Received message:', event);
 
@@ -280,16 +702,21 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
                         uploadedMediaId = event.data.mediaId;
                         uploadedFileName = event.data.fileName;
 
-                        // Show success status
+                        // Show success status with media ID
                         document.getElementById('file_name_display').textContent = uploadedFileName;
+                        document.getElementById('media_id_display').textContent = uploadedMediaId;
                         document.getElementById('upload_status').style.display = 'block';
-                        document.getElementById('btn_choose_file').textContent = '✅ File Uploaded - Choose Different File';
 
                         // Close modal
                         closeUploadModal();
 
                         // Enable process button
                         enableProcessButton();
+
+                        console.log('Upload completed successfully:', {
+                            mediaId: uploadedMediaId,
+                            fileName: uploadedFileName
+                        });
                     }
                 });
 
@@ -307,7 +734,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
                                 const optionId = urlParams.get('optionid');
                                 const optionName = urlParams.get('optionname');
 
-                                if (optionId) {
+                                                                if (optionId) {
                                     uploadedMediaId = optionId;
                                     uploadedFileName = decodeURIComponent(optionName || 'receipt.pdf');
 
@@ -316,10 +743,10 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
                                         fileName: uploadedFileName
                                     });
 
-                                    // Show success status
+                                    // Show success status with media ID
                                     document.getElementById('file_name_display').textContent = uploadedFileName;
+                                    document.getElementById('media_id_display').textContent = uploadedMediaId;
                                     document.getElementById('upload_status').style.display = 'block';
-                                    document.getElementById('btn_choose_file').textContent = '✅ File Uploaded - Choose Different File';
 
                                     // Close modal
                                     closeUploadModal();
@@ -353,17 +780,25 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
                     }
                 }, 30 * 60 * 1000);
 
-                function enableProcessButton() {
+                                                function enableProcessButton() {
                     // Add process button if it doesn't exist
                     if (!document.getElementById('btn_process_receipt')) {
+                        const buttonContainer = document.createElement('div');
+                        buttonContainer.className = 'process-container';
+                        buttonContainer.style.textAlign = 'center';
+
                         const processButton = document.createElement('button');
                         processButton.id = 'btn_process_receipt';
                         processButton.type = 'button';
+                        processButton.className = 'process-btn';
                         processButton.onclick = processUploadedReceipt;
-                        processButton.style.cssText = 'background: #28a745; color: white; border: none; padding: 12px 24px; border-radius: 5px; font-size: 16px; cursor: pointer; margin-left: 10px;';
-                        processButton.textContent = '🤖 Process Receipt';
+                        processButton.textContent = '🤖 Process Receipt with AI';
 
-                        document.getElementById('btn_choose_file').parentNode.appendChild(processButton);
+                        buttonContainer.appendChild(processButton);
+
+                        // Insert after the upload container
+                        const uploadContainer = document.querySelector('.upload-container');
+                        uploadContainer.parentNode.insertBefore(buttonContainer, uploadContainer.nextSibling);
                     }
                 }
 
@@ -747,41 +1182,178 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
             title: 'AI Processing Started'
         });
 
+        // Add client script for button actions
+        form.clientScriptModulePath = '../ClientScripts/AINS_CS_ReceiptUploadSuccess.js';
+
         const statusField = form.addField({
             id: 'processing_status',
             type: ui.FieldType.INLINEHTML,
-            label: 'Status'
+            label: 'Processing Status'
         });
 
         statusField.defaultValue = `
-            <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 20px; border-radius: 5px; margin: 20px 0; text-align: center;">
-                <h2 style="margin-top: 0; color: #155724;">✅ Upload Successful!</h2>
-                <p style="font-size: 16px; margin: 15px 0;"><strong>File:</strong> ${details.fileName}</p>
-                <hr style="border: none; border-top: 1px solid #c3e6cb; margin: 20px 0;">
-                <h3 style="color: #155724;">🤖 AI Processing Started</h3>
-                <p style="font-size: 15px; margin: 15px 0;">Your receipt is being processed automatically.</p>
-                <p style="font-size: 14px; color: #666; margin: 10px 0;">
-                    <em>Processing typically takes 2-5 minutes.<br/>
-                    Check your dashboard for the completed expense record.</em>
-                </p>
+            <style>
+                :root {
+                    --nsn-uif-redwood-color-light-neutral-0: rgb(255, 255, 255);
+                    --nsn-uif-redwood-color-light-neutral-10: rgb(251, 249, 248);
+                    --nsn-uif-redwood-color-light-neutral-20: rgb(245, 244, 242);
+                    --nsn-uif-redwood-color-light-brand-100: rgb(34, 126, 158);
+                    --nsn-uif-redwood-color-light-brand-120: rgb(54, 103, 125);
+                    --nsn-uif-redwood-color-light-text-primary: rgb(22, 21, 19);
+                    --nsn-uif-redwood-color-light-text-secondary: rgba(22, 21, 19, 0.7);
+                    --nsn-uif-redwood-color-light-border-divider: rgba(22, 21, 19, 0.12);
+                    --nsn-uif-redwood-size-s: 16px;
+                    --nsn-uif-redwood-size-m: 24px;
+                    --nsn-uif-redwood-border-rounded-corners: 6px;
+                    --nsn-uif-redwood-shadow-small: 0 4px 8px 0 rgba(0, 0, 0, 0.16);
+                }
+
+                .processing-container {
+                    background-color: var(--nsn-uif-redwood-color-light-neutral-0);
+                    border: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                    padding: var(--nsn-uif-redwood-size-m);
+                    margin: var(--nsn-uif-redwood-size-s) 0;
+                    text-align: center;
+                    box-shadow: var(--nsn-uif-redwood-shadow-small);
+                }
+
+                .success-header {
+                    font-size: 24px;
+                    font-weight: 600;
+                    color: var(--nsn-uif-redwood-color-light-brand-100);
+                    margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
+                }
+
+                .file-info {
+                    background-color: var(--nsn-uif-redwood-color-light-neutral-10);
+                    border: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                    padding: var(--nsn-uif-redwood-size-s);
+                    margin: var(--nsn-uif-redwood-size-s) 0;
+                    text-align: left;
+                }
+
+                .file-name {
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: var(--nsn-uif-redwood-color-light-text-primary);
+                    margin: 0 0 8px 0;
+                }
+
+                .file-detail {
+                    font-size: 14px;
+                    color: var(--nsn-uif-redwood-color-light-text-secondary);
+                    margin: 0;
+                }
+
+                .processing-status {
+                    margin: var(--nsn-uif-redwood-size-m) 0;
+                    padding: var(--nsn-uif-redwood-size-s);
+                    background-color: var(--nsn-uif-redwood-color-light-neutral-10);
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                    border: 1px dashed var(--nsn-uif-redwood-color-light-brand-100);
+                }
+
+                .processing-title {
+                    font-size: 20px;
+                    font-weight: 600;
+                    color: var(--nsn-uif-redwood-color-light-brand-100);
+                    margin: 0 0 12px 0;
+                }
+
+                .processing-message {
+                    font-size: 16px;
+                    color: var(--nsn-uif-redwood-color-light-text-primary);
+                    margin: 0 0 12px 0;
+                }
+
+                .processing-details {
+                    font-size: 14px;
+                    color: var(--nsn-uif-redwood-color-light-text-secondary);
+                    margin: 0;
+                    line-height: 1.5;
+                }
+
+                .action-buttons {
+                    margin: var(--nsn-uif-redwood-size-m) 0 0 0;
+                    display: flex;
+                    gap: var(--nsn-uif-redwood-size-s);
+                    justify-content: center;
+                    flex-wrap: wrap;
+                }
+
+                .action-btn {
+                    background-color: var(--nsn-uif-redwood-color-light-brand-120);
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                    font-size: 14px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    box-shadow: var(--nsn-uif-redwood-shadow-small);
+                    transition: background-color 0.2s ease;
+                    text-decoration: none;
+                    display: inline-block;
+                }
+
+                .action-btn:hover {
+                    background-color: var(--nsn-uif-redwood-color-light-brand-100);
+                }
+
+                .action-btn.secondary {
+                    background-color: var(--nsn-uif-redwood-color-light-neutral-20);
+                    color: var(--nsn-uif-redwood-color-light-text-primary);
+                    border: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
+                }
+
+                .action-btn.secondary:hover {
+                    background-color: var(--nsn-uif-redwood-color-light-neutral-10);
+                }
+            </style>
+
+            <div class="processing-container">
+                <div class="success-header">✅ Upload Successful!</div>
+
+                <div class="file-info">
+                    <div class="file-name">📄 ${details.fileName}</div>
+                    <div class="file-detail">File uploaded and processing initiated</div>
+                </div>
+
+                <div class="processing-status">
+                    <div class="processing-title">🤖 AI Processing Started</div>
+                    <div class="processing-message">Your receipt is being processed automatically</div>
+                    <div class="processing-details">
+                        Processing typically takes 2-5 minutes<br>
+                        Check your dashboard for the completed expense record
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button onclick="uploadAnother()" class="action-btn">
+                        📁 Upload Another Receipt
+                    </button>
+                    <button onclick="returnToDashboard()" class="action-btn secondary">
+                        🏠 Return to Dashboard
+                    </button>
+                </div>
             </div>
+
+            <script>
+                function uploadAnother() {
+                    // Navigate back to upload page
+                    const currentUrl = window.location.href;
+                    const baseUrl = currentUrl.split('?')[0];
+                    window.location.href = baseUrl;
+                }
+
+                function returnToDashboard() {
+                    // Navigate to Employee Center home
+                    window.location.href = '/app/center/userprefs.nl';
+                }
+            </script>
         `;
-
-        // Add action buttons
-        form.addButton({
-            id: 'btn_upload_another',
-            label: 'Upload Another Receipt',
-            functionName: 'uploadAnother'
-        });
-
-        form.addButton({
-            id: 'btn_return_dashboard',
-            label: 'Return to Dashboard',
-            functionName: 'returnToDashboard'
-        });
-
-        // Add client script for button actions
-        form.clientScriptModulePath = '../ClientScripts/AINS_CS_ReceiptUploadSuccess.js';
 
         context.response.writePage(form);
     }
@@ -1038,7 +1610,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
     }
 
     /**
-     * Add form styling
+     * Add minimal form styling aligned with Redwood design system
      * @param {Form} form - Form object
      */
     function addFormStyling(form) {
@@ -1048,24 +1620,32 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
             label: 'Styling'
         });
 
-        styleField.defaultValue = `
+                styleField.defaultValue = `
             <style>
-                .uir-form-title { color: #1f4e79; font-size: 24px; }
-                .uir-field-wrapper { margin: 10px 0; }
-                .uir-form-group-title { background: #f8f9fa; padding: 10px; border-radius: 3px; }
-                .file-upload-area {
-                    border: 2px dashed #ccc;
-                    padding: 20px;
-                    text-align: center;
-                    border-radius: 5px;
-                    margin: 10px 0;
+                .uir-form-title {
+                    color: rgb(22, 21, 19);
+                    font-size: 24px;
+                    font-weight: 600;
+                    margin-bottom: 16px;
                 }
-                .file-upload-area:hover { border-color: #007bff; }
-                .instructions {
-                    background: #e7f3ff;
-                    border-left: 4px solid #007bff;
-                    padding: 15px;
-                    margin: 10px 0;
+                .uir-field-wrapper {
+                    margin: 8px 0;
+                }
+                body {
+                    font-family: 'Oracle Sans', 'Helvetica Neue', sans-serif;
+                    background-color: rgb(251, 249, 248);
+                }
+                /* Hide default NetSuite form elements */
+                .uir-form-buttons,
+                .uir-form-buttonbar,
+                input[type="submit"],
+                input[value="Save"],
+                input[value="Cancel"] {
+                    display: none !important;
+                }
+                /* Hide any unwanted form sections */
+                .uir-form-section:not(:has(.upload-container)) {
+                    display: none !important;
                 }
             </style>
         `;
@@ -1073,53 +1653,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, commonL
         styleField.updateDisplayType({ displayType: ui.FieldDisplayType.HIDDEN });
     }
 
-    /**
-     * Create instructions HTML
-     * @returns {string} Instructions HTML
-     */
-    function createInstructionsHTML() {
-        const maxSize = commonLib.getScriptParameter(CONSTANTS.SCRIPT_PARAMS.MAX_FILE_SIZE, CONSTANTS.DEFAULT_VALUES.MAX_FILE_SIZE_MB);
-
-        return `
-            <div class="instructions">
-                <h4>📋 Upload Instructions</h4>
-                <ul>
-                    <li><strong>Supported Files:</strong> ${CONSTANTS.SUPPORTED_FILE_TYPES.join(', ').toUpperCase()} (max ${maxSize}MB)</li>
-                    <li><strong>Processing:</strong> AI will automatically extract vendor, amount, date, and category</li>
-                    <li><strong>Quality:</strong> Clear, well-lit images work best</li>
-                    <li><strong>Security:</strong> Files are stored securely in your personal expense folder</li>
-                </ul>
-                <p><em>💡 Tip: You can import processed expenses into your expense reports later!</em></p>
-            </div>
-        `;
-    }
-
-    /**
-     * Add recent uploads section to form
-     * @param {Form} form - Form object
-     * @param {string} userId - Current user ID
-     */
-    function addRecentUploadsSection(form, userId) {
-        try {
-            // This would query recent uploads - simplified for now
-            const recentField = form.addField({
-                id: 'recent_uploads',
-                type: ui.FieldType.INLINEHTML,
-                label: 'Recent Uploads'
-            });
-
-            recentField.defaultValue = `
-                <div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px;">
-                    <h4>📊 Recent Activity</h4>
-                    <p><em>Your recent uploads will appear here after processing.</em></p>
-                </div>
-            `;
-
-        } catch (error) {
-            // Ignore if recent uploads section fails
-            commonLib.logOperation('recent_uploads_error', { error: error.message }, 'error');
-        }
-    }
+    // Removed createInstructionsHTML and addRecentUploadsSection for cleaner interface
 
     return {
         onRequest: onRequest

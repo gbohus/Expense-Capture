@@ -57,8 +57,14 @@ function(llm, log, search, commonLib) {
             // Call NetSuite LLM
             const response = llm.generateText(llmOptions);
 
+            // Debug logging for LLM response
+            log.debug('processExpenseDataWithLLM', `Raw LLM response: ${response.text}`);
+
             // Parse and validate LLM response
             const parsedData = parseExpenseDataFromLLMResponse(response.text, expenseCategories);
+
+            // Debug logging for parsed data
+            log.debug('processExpenseDataWithLLM', `Parsed LLM data: ${JSON.stringify(parsedData)}`);
 
             // Apply confidence threshold
             const confidenceThreshold = options.confidenceThreshold ||
@@ -224,6 +230,10 @@ Analyze thoroughly and respond with only the JSON object.`;
             // Try to parse JSON
             const parsedData = JSON.parse(cleanResponse);
 
+            // Debug logging for raw parsed data
+            log.debug('parseExpenseDataFromLLMResponse', `Raw parsed JSON: ${JSON.stringify(parsedData)}`);
+            log.debug('parseExpenseDataFromLLMResponse', `Raw categoryId from LLM: "${parsedData.categoryId}" (type: ${typeof parsedData.categoryId})`);
+
             // Validate required fields
             const requiredFields = ['vendor', 'amount', 'date', 'categoryId', 'description', 'confidence'];
             const validation = commonLib.validateRequiredFields(parsedData, requiredFields);
@@ -317,14 +327,21 @@ Analyze thoroughly and respond with only the JSON object.`;
      * @returns {string} Valid category ID
      */
     function validateAndFormatCategory(categoryId, expenseCategories) {
+        // Debug logging
+        log.debug('validateAndFormatCategory', `Input categoryId: "${categoryId}" (type: ${typeof categoryId})`);
+        log.debug('validateAndFormatCategory', `Available categories: ${JSON.stringify(expenseCategories.map(c => ({id: c.id, name: c.name, idType: typeof c.id})))}`);
+
         if (!categoryId || !expenseCategories || expenseCategories.length === 0) {
+            log.debug('validateAndFormatCategory', 'Returning default category due to missing categoryId or expenseCategories');
             return getDefaultCategoryId(expenseCategories);
         }
 
         // Check if provided category ID exists
-        const category = expenseCategories.find(cat => cat.id === String(categoryId));
+        const category = expenseCategories.find(cat => String(cat.id) === String(categoryId));
+        log.debug('validateAndFormatCategory', `Direct ID match for "${String(categoryId)}": ${category ? `Found ${category.name}` : 'Not found'}`);
 
         if (category) {
+            log.debug('validateAndFormatCategory', `Returning matched category ID: ${String(categoryId)}`);
             return String(categoryId);
         }
 
@@ -332,13 +349,17 @@ Analyze thoroughly and respond with only the JSON object.`;
         const categoryByName = expenseCategories.find(cat =>
             cat.name.toLowerCase() === String(categoryId).toLowerCase()
         );
+        log.debug('validateAndFormatCategory', `Name match for "${String(categoryId)}": ${categoryByName ? `Found ${categoryByName.name} (ID: ${categoryByName.id})` : 'Not found'}`);
 
         if (categoryByName) {
+            log.debug('validateAndFormatCategory', `Returning category ID by name match: ${categoryByName.id}`);
             return categoryByName.id;
         }
 
         // Default to first available category
-        return getDefaultCategoryId(expenseCategories);
+        const defaultCategoryId = getDefaultCategoryId(expenseCategories);
+        log.debug('validateAndFormatCategory', `No match found, returning default category ID: ${defaultCategoryId}`);
+        return defaultCategoryId;
     }
 
     /**
