@@ -428,3 +428,45 @@ html, body {
     background-color: var(--nsn-uif-redwood-color-light-surface-danger-low);
     color: var(--nsn-uif-redwood-color-light-text-danger);
 }
+
+/* Processing Overlay (for dynamic JavaScript modals) */
+.my-app-processing-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--nsn-uif-redwood-color-light-overlay-scrim);
+    z-index: calc(var(--nsn-uif-redwood-z-index-top-most) + 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.my-app-processing-message-box {
+    background-color: var(--nsn-uif-redwood-color-light-neutral-0);
+    padding: var(--nsn-uif-redwood-size-l);
+    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+    text-align: center;
+    max-width: 400px;
+    box-shadow: var(--nsn-uif-redwood-shadow-medium);
+}
+
+.my-app-processing-title {
+    font-size: var(--nsn-uif-redwood-font-size-body-lg);
+    color: var(--nsn-uif-redwood-color-light-text-primary);
+    margin-bottom: var(--nsn-uif-redwood-size-s);
+    font-weight: var(--nsn-uif-redwood-font-weight-semi-bold);
+}
+
+.my-app-processing-message {
+    margin-bottom: var(--nsn-uif-redwood-size-s);
+    color: var(--nsn-uif-redwood-color-light-text-primary);
+    font-size: var(--nsn-uif-redwood-font-size-body-sm);
+}
+
+.my-app-processing-details {
+    font-size: var(--nsn-uif-redwood-font-size-body-xs);
+    color: var(--nsn-uif-redwood-color-light-text-secondary);
+    margin: 0;
+}

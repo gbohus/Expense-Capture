@@ -365,7 +365,7 @@ function(ui, runtime, query, url, format, commonLib) {
         return `
             <div class="ains-header">
                 <div style="font-size: 18px; font-weight: bold; margin-bottom: 6px;">
-                    All Expense Captures
+                    Employee Expense Items
                 </div>
 
             </div>

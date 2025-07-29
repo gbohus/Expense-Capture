@@ -128,7 +128,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
 
         // Create NetSuite form (keeps toolbar) with clean content
         const form = ui.createForm({
-            title: 'AI NS Expense Receipt Upload'
+            title: 'Expense Capture'
         });
 
         // Add client script
@@ -188,6 +188,8 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
         });
 
         uploadField.defaultValue = `
+            <link rel="stylesheet" type="text/css" href="../Libraries/AINS_LIB_Styles.css">
+
             <style>
                 :root {
                     --nsn-uif-redwood-color-light-neutral-0: rgb(255, 255, 255);
@@ -202,6 +204,92 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                     --nsn-uif-redwood-size-m: 24px;
                     --nsn-uif-redwood-border-rounded-corners: 6px;
                     --nsn-uif-redwood-shadow-small: 0 4px 8px 0 rgba(0, 0, 0, 0.16);
+                }
+
+                /* Process Flow Styles */
+                .process-flow-container {
+                    background-color: var(--nsn-uif-redwood-color-light-neutral-10);
+                    border: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                    padding: var(--nsn-uif-redwood-size-m);
+                    margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
+                    text-align: center;
+                }
+
+                .process-flow-title {
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: var(--nsn-uif-redwood-color-light-text-primary);
+                    margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
+                }
+
+                .process-flow-steps {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: var(--nsn-uif-redwood-size-s);
+                    max-width: 600px;
+                    margin: 0 auto;
+                }
+
+                .process-step {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    text-align: center;
+                    flex: 1;
+                    min-width: 120px;
+                    max-width: 160px;
+                }
+
+                .step-icon {
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 50%;
+                    background-color: var(--nsn-uif-redwood-color-light-brand-100);
+                    color: white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 20px;
+                    margin-bottom: 8px;
+                    box-shadow: var(--nsn-uif-redwood-shadow-small);
+                }
+
+                .step-title {
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: var(--nsn-uif-redwood-color-light-text-primary);
+                    margin: 0 0 4px 0;
+                    line-height: 1.2;
+                }
+
+                .step-description {
+                    font-size: 10px;
+                    color: var(--nsn-uif-redwood-color-light-text-secondary);
+                    margin: 0;
+                    line-height: 1.3;
+                }
+
+                .process-arrow {
+                    color: var(--nsn-uif-redwood-color-light-brand-100);
+                    font-size: 18px;
+                    font-weight: bold;
+                    margin: 0 4px;
+                    flex-shrink: 0;
+                }
+
+                @media (max-width: 600px) {
+                    .process-flow-steps {
+                        flex-direction: column;
+                        gap: var(--nsn-uif-redwood-size-s);
+                    }
+
+                    .process-arrow {
+                        transform: rotate(90deg);
+                        margin: 4px 0;
+                    }
                 }
 
                 .upload-container {
@@ -354,8 +442,31 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                 }
             </style>
 
+            <div class="process-flow-container">
+                <div class="process-flow-title">Expense Capture Processing Flow</div>
+                <div class="process-flow-steps">
+                    <div class="process-step">
+                        <div class="step-icon">⬆</div>
+                        <div class="step-title">Upload</div>
+                        <div class="step-description">Choose your receipt file</div>
+                    </div>
+                    <span class="process-arrow">→</span>
+                    <div class="process-step">
+                        <div class="step-icon">⚙</div>
+                        <div class="step-title">Process</div>
+                        <div class="step-description">Extract data using AI</div>
+                    </div>
+                    <span class="process-arrow">→</span>
+                    <div class="process-step">
+                        <div class="step-icon">✓</div>
+                        <div class="step-title">Review</div>
+                        <div class="step-description">Navigate to expense report and add expense items</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="upload-container">
-                <div class="upload-title">AI Receipt Processing</div>
+                <div class="upload-title">Receipt Processing</div>
                 <div class="upload-subtitle">Upload your receipt for automatic expense data extraction</div>
 
                 <button type="button" id="btn_choose_file" onclick="openExpenseUpload()" class="choose-file-btn">
@@ -463,20 +574,24 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
 
                 function enableProcessButton() {
                     if (!document.getElementById('btn_process_receipt')) {
-                        const buttonContainer = document.createElement('div');
-                        buttonContainer.className = 'process-container';
+                        // Hide the choose file button
+                        document.getElementById('btn_choose_file').style.display = 'none';
 
+                        // Add process button to the main container (white area)
                         const processButton = document.createElement('button');
                         processButton.id = 'btn_process_receipt';
                         processButton.type = 'button';
                         processButton.className = 'process-btn';
                         processButton.onclick = processUploadedReceipt;
-                        processButton.textContent = '🤖 Process Receipt with AI';
+                        processButton.textContent = 'Process Receipt';
 
-                        buttonContainer.appendChild(processButton);
+                        // Add some margin for spacing and center it
+                        processButton.style.marginTop = '20px';
+                        processButton.style.display = 'block';
+                        processButton.style.margin = '20px auto 0 auto';
 
                         const uploadContainer = document.querySelector('.upload-container');
-                        uploadContainer.parentNode.insertBefore(buttonContainer, uploadContainer.nextSibling);
+                        uploadContainer.appendChild(processButton);
                     }
                 }
 
@@ -525,11 +640,14 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                 function showProcessingMessage(message) {
                     const overlay = document.createElement('div');
                     overlay.id = 'processing-overlay';
-                    overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10001; display: flex; align-items: center; justify-content: center;';
+                    overlay.className = 'my-app-processing-overlay';
 
                     const messageBox = document.createElement('div');
-                    messageBox.style.cssText = 'background: white; padding: 30px; border-radius: 6px; text-align: center; max-width: 400px; box-shadow: 0 6px 12px 0px rgba(0, 0, 0, 0.2);';
-                    messageBox.innerHTML = '<div style="font-size: 18px; color: rgb(22, 21, 19); margin-bottom: 15px;">🔄 Processing...</div><div style="margin-bottom: 15px;">' + message + '</div><div style="font-size: 12px; color: rgba(22, 21, 19, 0.7);">Please wait while we process your receipt.</div>';
+                    messageBox.className = 'my-app-processing-message-box';
+                    messageBox.innerHTML =
+                        '<div class="my-app-processing-title">🔄 Processing...</div>' +
+                        '<div class="my-app-processing-message">' + message + '</div>' +
+                        '<div class="my-app-processing-details">Please wait while we process your receipt.</div>';
 
                     overlay.appendChild(messageBox);
                     document.body.appendChild(overlay);
@@ -564,6 +682,8 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
         });
 
         uploadField.defaultValue = `
+            <link rel="stylesheet" type="text/css" href="../Libraries/AINS_LIB_Styles.css">
+
             <style>
                 :root {
                     --nsn-uif-redwood-color-light-neutral-0: rgb(255, 255, 255);
@@ -578,6 +698,92 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                     --nsn-uif-redwood-size-m: 24px;
                     --nsn-uif-redwood-border-rounded-corners: 6px;
                     --nsn-uif-redwood-shadow-small: 0 4px 8px 0 rgba(0, 0, 0, 0.16);
+                }
+
+                /* Process Flow Styles */
+                .process-flow-container {
+                    background-color: var(--nsn-uif-redwood-color-light-neutral-10);
+                    border: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
+                    border-radius: var(--nsn-uif-redwood-border-rounded-corners);
+                    padding: var(--nsn-uif-redwood-size-m);
+                    margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
+                    text-align: center;
+                }
+
+                .process-flow-title {
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: var(--nsn-uif-redwood-color-light-text-primary);
+                    margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
+                }
+
+                .process-flow-steps {
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: var(--nsn-uif-redwood-size-s);
+                    max-width: 600px;
+                    margin: 0 auto;
+                }
+
+                .process-step {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    text-align: center;
+                    flex: 1;
+                    min-width: 120px;
+                    max-width: 160px;
+                }
+
+                .step-icon {
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 50%;
+                    background-color: var(--nsn-uif-redwood-color-light-brand-100);
+                    color: white;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 20px;
+                    margin-bottom: 8px;
+                    box-shadow: var(--nsn-uif-redwood-shadow-small);
+                }
+
+                .step-title {
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: var(--nsn-uif-redwood-color-light-text-primary);
+                    margin: 0 0 4px 0;
+                    line-height: 1.2;
+                }
+
+                .step-description {
+                    font-size: 10px;
+                    color: var(--nsn-uif-redwood-color-light-text-secondary);
+                    margin: 0;
+                    line-height: 1.3;
+                }
+
+                .process-arrow {
+                    color: var(--nsn-uif-redwood-color-light-brand-100);
+                    font-size: 18px;
+                    font-weight: bold;
+                    margin: 0 4px;
+                    flex-shrink: 0;
+                }
+
+                @media (max-width: 600px) {
+                    .process-flow-steps {
+                        flex-direction: column;
+                        gap: var(--nsn-uif-redwood-size-s);
+                    }
+
+                    .process-arrow {
+                        transform: rotate(90deg);
+                        margin: 4px 0;
+                    }
                 }
 
                 .upload-container {
@@ -730,8 +936,31 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                 }
             </style>
 
+            <div class="process-flow-container">
+                <div class="process-flow-title">Expense Capture Processing Flow</div>
+                <div class="process-flow-steps">
+                    <div class="process-step">
+                        <div class="step-icon">⬆</div>
+                        <div class="step-title">Upload</div>
+                        <div class="step-description">Choose your receipt file</div>
+                    </div>
+                    <span class="process-arrow">→</span>
+                    <div class="process-step">
+                        <div class="step-icon">⚙</div>
+                        <div class="step-title">Process</div>
+                        <div class="step-description">Extract data using AI</div>
+                    </div>
+                    <span class="process-arrow">→</span>
+                    <div class="process-step">
+                        <div class="step-icon">✓</div>
+                        <div class="step-title">Review</div>
+                        <div class="step-description">Add to expense report</div>
+                    </div>
+                </div>
+            </div>
+
             <div class="upload-container">
-                <div class="upload-title">AI Receipt Processing</div>
+                <div class="upload-title">Receipt Processing</div>
                 <div class="upload-subtitle">Upload your receipt for automatic expense data extraction</div>
 
                 <button type="button" id="btn_choose_file" onclick="openRegularUpload()" class="choose-file-btn">
@@ -818,20 +1047,24 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
 
                 function enableProcessButton() {
                     if (!document.getElementById('btn_process_receipt')) {
-                        const buttonContainer = document.createElement('div');
-                        buttonContainer.className = 'process-container';
+                        // Hide the choose file button
+                        document.getElementById('btn_choose_file').style.display = 'none';
 
+                        // Add process button to the main container (white area)
                         const processButton = document.createElement('button');
                         processButton.id = 'btn_process_receipt';
                         processButton.type = 'button';
                         processButton.className = 'process-btn';
                         processButton.onclick = processUploadedFile;
-                        processButton.textContent = '🤖 Process Receipt with AI';
+                        processButton.textContent = 'Process Receipt';
 
-                        buttonContainer.appendChild(processButton);
+                        // Add some margin for spacing and center it
+                        processButton.style.marginTop = '20px';
+                        processButton.style.display = 'block';
+                        processButton.style.margin = '20px auto 0 auto';
 
                         const uploadContainer = document.querySelector('.upload-container');
-                        uploadContainer.parentNode.insertBefore(buttonContainer, uploadContainer.nextSibling);
+                        uploadContainer.appendChild(processButton);
                     }
                 }
 
@@ -880,11 +1113,14 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                 function showProcessingMessage(message) {
                     const overlay = document.createElement('div');
                     overlay.id = 'processing-overlay';
-                    overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10001; display: flex; align-items: center; justify-content: center;';
+                    overlay.className = 'my-app-processing-overlay';
 
                     const messageBox = document.createElement('div');
-                    messageBox.style.cssText = 'background: white; padding: 30px; border-radius: 6px; text-align: center; max-width: 400px; box-shadow: 0 6px 12px 0px rgba(0, 0, 0, 0.2);';
-                    messageBox.innerHTML = '<div style="font-size: 18px; color: rgb(22, 21, 19); margin-bottom: 15px;">🔄 Processing...</div><div style="margin-bottom: 15px;">' + message + '</div><div style="font-size: 12px; color: rgba(22, 21, 19, 0.7);">Please wait while we process your receipt.</div>';
+                    messageBox.className = 'my-app-processing-message-box';
+                    messageBox.innerHTML =
+                        '<div class="my-app-processing-title">🔄 Processing...</div>' +
+                        '<div class="my-app-processing-message">' + message + '</div>' +
+                        '<div class="my-app-processing-details">Please wait while we process your receipt.</div>';
 
                     overlay.appendChild(messageBox);
                     document.body.appendChild(overlay);
@@ -1196,22 +1432,10 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
         });
 
         statusField.defaultValue = `
-            <style>
-                :root {
-                    --nsn-uif-redwood-color-light-neutral-0: rgb(255, 255, 255);
-                    --nsn-uif-redwood-color-light-neutral-10: rgb(251, 249, 248);
-                    --nsn-uif-redwood-color-light-neutral-20: rgb(245, 244, 242);
-                    --nsn-uif-redwood-color-light-brand-100: rgb(34, 126, 158);
-                    --nsn-uif-redwood-color-light-brand-120: rgb(54, 103, 125);
-                    --nsn-uif-redwood-color-light-text-primary: rgb(22, 21, 19);
-                    --nsn-uif-redwood-color-light-text-secondary: rgba(22, 21, 19, 0.7);
-                    --nsn-uif-redwood-color-light-border-divider: rgba(22, 21, 19, 0.12);
-                    --nsn-uif-redwood-size-s: 16px;
-                    --nsn-uif-redwood-size-m: 24px;
-                    --nsn-uif-redwood-border-rounded-corners: 6px;
-                    --nsn-uif-redwood-shadow-small: 0 4px 8px 0 rgba(0, 0, 0, 0.16);
-                }
+            <link rel="stylesheet" type="text/css" href="../Libraries/AINS_LIB_Styles.css">
 
+            <style>
+                /* Component-specific styles not in the main CSS */
                 .processing-container {
                     background-color: var(--nsn-uif-redwood-color-light-neutral-0);
                     border: 1px solid var(--nsn-uif-redwood-color-light-border-divider);
@@ -1223,8 +1447,8 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                 }
 
                 .success-header {
-                    font-size: 24px;
-                    font-weight: 600;
+                    font-size: var(--nsn-uif-redwood-font-size-heading-sm);
+                    font-weight: var(--nsn-uif-redwood-font-weight-semi-bold);
                     color: var(--nsn-uif-redwood-color-light-brand-100);
                     margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
                 }
@@ -1239,14 +1463,14 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                 }
 
                 .file-name {
-                    font-size: 16px;
-                    font-weight: 600;
+                    font-size: var(--nsn-uif-redwood-font-size-body-md);
+                    font-weight: var(--nsn-uif-redwood-font-weight-semi-bold);
                     color: var(--nsn-uif-redwood-color-light-text-primary);
-                    margin: 0 0 8px 0;
+                    margin: 0 0 var(--nsn-uif-redwood-size-2-xs) 0;
                 }
 
                 .file-detail {
-                    font-size: 14px;
+                    font-size: var(--nsn-uif-redwood-font-size-body-sm);
                     color: var(--nsn-uif-redwood-color-light-text-secondary);
                     margin: 0;
                 }
@@ -1260,20 +1484,20 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                 }
 
                 .processing-title {
-                    font-size: 20px;
-                    font-weight: 600;
+                    font-size: var(--nsn-uif-redwood-font-size-body-xl);
+                    font-weight: var(--nsn-uif-redwood-font-weight-semi-bold);
                     color: var(--nsn-uif-redwood-color-light-brand-100);
-                    margin: 0 0 12px 0;
+                    margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
                 }
 
                 .processing-message {
-                    font-size: 16px;
+                    font-size: var(--nsn-uif-redwood-font-size-body-md);
                     color: var(--nsn-uif-redwood-color-light-text-primary);
-                    margin: 0 0 12px 0;
+                    margin: 0 0 var(--nsn-uif-redwood-size-s) 0;
                 }
 
                 .processing-details {
-                    font-size: 14px;
+                    font-size: var(--nsn-uif-redwood-font-size-body-sm);
                     color: var(--nsn-uif-redwood-color-light-text-secondary);
                     margin: 0;
                     line-height: 1.5;
@@ -1289,12 +1513,12 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
 
                 .action-btn {
                     background-color: var(--nsn-uif-redwood-color-light-brand-120);
-                    color: white;
+                    color: var(--nsn-uif-redwood-color-light-text-inverse);
                     border: none;
-                    padding: 12px 24px;
+                    padding: var(--nsn-uif-redwood-size-2-xs) var(--nsn-uif-redwood-size-m);
                     border-radius: var(--nsn-uif-redwood-border-rounded-corners);
-                    font-size: 14px;
-                    font-weight: 600;
+                    font-size: var(--nsn-uif-redwood-font-size-body-sm);
+                    font-weight: var(--nsn-uif-redwood-font-weight-semi-bold);
                     cursor: pointer;
                     box-shadow: var(--nsn-uif-redwood-shadow-small);
                     transition: background-color 0.2s ease;
@@ -1624,20 +1848,22 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
             label: 'Styling'
         });
 
-                styleField.defaultValue = `
+        styleField.defaultValue = `
+            <link rel="stylesheet" type="text/css" href="../Libraries/AINS_LIB_Styles.css">
+
             <style>
                 .uir-form-title {
-                    color: rgb(22, 21, 19);
-                    font-size: 24px;
-                    font-weight: 600;
-                    margin-bottom: 16px;
+                    color: var(--nsn-uif-redwood-color-light-text-primary);
+                    font-size: var(--nsn-uif-redwood-font-size-heading-sm);
+                    font-weight: var(--nsn-uif-redwood-font-weight-semi-bold);
+                    margin-bottom: var(--nsn-uif-redwood-size-s);
                 }
                 .uir-field-wrapper {
-                    margin: 8px 0;
+                    margin: var(--nsn-uif-redwood-size-2-xs) 0;
                 }
                 body {
                     font-family: 'Oracle Sans', 'Helvetica Neue', sans-serif;
-                    background-color: rgb(251, 249, 248);
+                    background-color: var(--nsn-uif-redwood-color-light-neutral-10);
                 }
                 /* Hide default NetSuite form elements */
                 .uir-form-buttons,
