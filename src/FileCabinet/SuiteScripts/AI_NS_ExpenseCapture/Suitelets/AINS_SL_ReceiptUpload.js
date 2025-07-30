@@ -12,6 +12,29 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
     const CONSTANTS = commonLib.CONSTANTS;
 
     /**
+     * Load CSS file and return as inline styles
+     * @returns {string} CSS content wrapped in style tags
+     */
+    function loadInlineCSS() {
+        try {
+            // Load the CSS file from the file cabinet
+            const cssFile = file.load({
+                id: '/SuiteScripts/AI_NS_ExpenseCapture/Libraries/AINS_LIB_Styles.css'
+            });
+
+            const cssContent = cssFile.getContents();
+            return `<style>${cssContent}</style>`;
+        } catch (error) {
+            commonLib.logOperation('css_load_error', {
+                error: error.message
+            }, 'error');
+
+            // Return empty style tag if CSS can't be loaded
+            return '<style>/* CSS load failed */</style>';
+        }
+    }
+
+    /**
      * Check if the Expense Management feature is enabled
      * @returns {boolean} True if fcexpense feature is enabled
      */
@@ -188,7 +211,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
         });
 
         uploadField.defaultValue = `
-            <link rel="stylesheet" type="text/css" href="../Libraries/AINS_LIB_Styles.css">
+            ${loadInlineCSS()}
 
             <style>
                 :root {
@@ -786,7 +809,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
         });
 
         uploadField.defaultValue = `
-            <link rel="stylesheet" type="text/css" href="../Libraries/AINS_LIB_Styles.css">
+            ${loadInlineCSS()}
 
             <style>
                 :root {
@@ -1599,7 +1622,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
                 <title>AI Processing Started - NetSuite</title>
                 <meta charset="utf-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <link rel="stylesheet" type="text/css" href="../Libraries/AINS_LIB_Styles.css">
+                ${loadInlineCSS()}
                 <style>
                     :root {
                         --nsn-uif-redwood-color-light-neutral-0: rgb(255, 255, 255);
@@ -1762,7 +1785,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
             <body>
                 <div class="container">
                     <div class="header">
-                        <h1>🤖 AI Processing Started</h1>
+                        <h1>Processing Started</h1>
                     </div>
 
                     <div class="content">
@@ -2802,7 +2825,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
         });
 
         styleField.defaultValue = `
-            <link rel="stylesheet" type="text/css" href="../Libraries/AINS_LIB_Styles.css">
+            ${loadInlineCSS()}
 
             <style>
                 .uir-form-title {
