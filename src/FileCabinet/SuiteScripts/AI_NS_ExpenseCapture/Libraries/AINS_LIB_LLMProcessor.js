@@ -31,12 +31,22 @@ function(llm, log, search, commonLib) {
             // Get expense categories if not provided
             const expenseCategories = options.expenseCategories || commonLib.getExpenseCategories();
 
-            // Build prompt with OCR data and categories
-            const prompt = buildExpenseProcessingPrompt(ocrData, expenseCategories);
+            // Create chat history with OCR data and confidence guidance as first user message
+            const confidenceGuidance = buildConfidenceGuidanceSection(ocrData);
+            const chatHistory = [
+                llm.createChatMessage({
+                    role: llm.ChatRole.USER,
+                    text: `Please analyze this receipt/expense data:\n\n${JSON.stringify(ocrData, null, 2)}${confidenceGuidance}`
+                })
+            ];
+
+            // Build instructions-only prompt (no OCR data embedded)
+            const prompt = buildExpenseProcessingPrompt(expenseCategories);
 
             // Configure LLM parameters
             const llmOptions = {
                 prompt: prompt,
+                chatHistory: chatHistory,
                 modelFamily: getLLMModelFamily(options.model),
                 modelParameters: {
                     maxTokens: 500,
@@ -48,11 +58,18 @@ function(llm, log, search, commonLib) {
                 }
             };
 
-            // Add documents if available for RAG
-            const documents = createDocumentsFromOCRData(ocrData);
-            if (documents.length > 0) {
-                llmOptions.documents = documents;
-            }
+            // Create complete LLM request object for logging
+            const completeRequest = {
+                prompt: prompt,
+                chatHistory: chatHistory.map(msg => ({
+                    role: msg.role,
+                    text: msg.text
+                })),
+                modelFamily: llmOptions.modelFamily,
+                modelParameters: llmOptions.modelParameters,
+                timestamp: new Date().toISOString(),
+                trackingId: trackingId
+            };
 
             // Call NetSuite LLM
             const response = llm.generateText(llmOptions);
@@ -80,15 +97,25 @@ function(llm, log, search, commonLib) {
                 hasDate: !!finalData.date,
                 hasCategory: !!finalData.categoryId,
                 confidence: finalData.confidence,
-                modelUsed: response.model
+                modelUsed: response.model,
+                requestParameters: {
+                    temperature: llmOptions.modelParameters.temperature,
+                    maxTokens: llmOptions.modelParameters.maxTokens,
+                    topK: llmOptions.modelParameters.topK,
+                    topP: llmOptions.modelParameters.topP
+                }
             });
+
+            // Create JSON string first, then format it for display
+            const jsonString = JSON.stringify(completeRequest, null, 2);
+            const formattedJsonString = formatTextForNetSuiteDisplay(jsonString);
 
             return {
                 success: true,
                 trackingId: trackingId,
                 expenseData: finalData,
                 rawLLMResponse: response.text,
-                rawLLMRequest: prompt,
+                rawLLMRequest: formattedJsonString,
                 model: response.model,
                 citations: response.citations || []
             };
@@ -110,84 +137,60 @@ function(llm, log, search, commonLib) {
 
     /**
      * Build comprehensive prompt for expense processing
-     * @param {Object} ocrData - OCR extracted data
      * @param {Array} expenseCategories - Available expense categories
      * @returns {string} Formatted prompt for LLM
      */
-    function buildExpenseProcessingPrompt(ocrData, expenseCategories) {
+    function buildExpenseProcessingPrompt(expenseCategories) {
         const categoryList = expenseCategories.map(cat =>
             `${cat.id}: ${cat.name}${cat.description ? ` (${cat.description})` : ''}`
         ).join('\n');
 
-        const prompt = `You are a NetSuite expense processing assistant with deep knowledge of business expense categorization. Analyze this receipt data intelligently.
-
-EXTRACTED OCR DATA:
-${JSON.stringify(ocrData, null, 2)}
-
-${buildConfidenceGuidanceSection(ocrData)}
+        const prompt = `You are a NetSuite expense processing assistant. Analyze the receipt data from the previous message and extract business expense information.
 
 AVAILABLE EXPENSE CATEGORIES:
 ${categoryList}
 
-INTELLIGENT ANALYSIS TASK:
-Process this receipt using business expense expertise to make the smartest possible categorization and data extraction.
+EXTRACTION RULES:
+• **Vendor**: Business name only (not payment processors like "SQ *")
+• **Amount**: Final total including tax/tips (not subtotals)
+• **Date**: Transaction date in YYYY-MM-DD format
+• **Category**: Match vendor type to most appropriate category ID
+• **Description**: Clear 3-6 word summary
+• **Confidence**: Score 0.0-1.0 based on data clarity (1.0 = highest confidence)
 
-EXTRACTION REQUIREMENTS:
-1. **Vendor Analysis**: Extract the business/merchant name (not payment processor names like "SQ *" or "PYMT")
-2. **Amount Intelligence**: Find the final total amount including tax/tips, ignore subtotals or line items
-3. **Date Precision**: Extract transaction date (not processing/posting dates)
-4. **Smart Categorization**: Match to the most specific and appropriate expense category based on:
-   - Business type/industry of vendor
-   - Common expense patterns (meals, travel, office supplies, etc.)
-   - Specific category descriptions provided
-5. **Descriptive Summary**: Create a clear 3-6 word expense description
+CATEGORY EXAMPLES:
+• Restaurants → Meals & Entertainment
+• Gas stations/Airlines/Uber → Travel & Transportation
+• Hotels → Travel/Lodging
+• Software/subscriptions → Technology
+• When uncertain, choose the most general applicable category
 
-CATEGORY MATCHING INTELLIGENCE:
-- Restaurant/dining → Meals & Entertainment categories
-- Gas stations → Travel/Transportation
-- Hotels → Travel/Lodging
-- Office supply stores → Office Supplies
-- Airlines → Travel/Transportation
-- Uber/Lyft/taxi → Transportation/Local Travel
-- Software/subscriptions → Technology/Software
-- Phone bills → Communications/Phone
-- Internet → Communications/Internet
-- When uncertain, choose the most general applicable category
-
-RESPONSE FORMAT:
-Return ONLY this exact JSON structure:
+RESPONSE FORMAT (JSON only):
 {
-    "vendor": "string - clean business name (no payment processors)",
-    "amount": number - final total as decimal number,
-    "date": "string - transaction date in YYYY-MM-DD format",
-    "categoryId": "string - exact category ID from list above",
-    "description": "string - clear expense description (3-6 words)",
-    "confidence": number - confidence score 1-10 based on data clarity - 10 being the highest confidence",
-    "reasoning": "string - brief explanation of category choice"
+    "vendor": "clean business name",
+    "amount": 0.00,
+    "date": "YYYY-MM-DD",
+    "categoryId": "exact category ID",
+    "description": "brief expense summary",
+    "confidence": 0.95,
+    "reasoning": "brief category explanation"
 }
 
 QUALITY STANDARDS:
-- High confidence (8+): Clear vendor, amount, date, obvious category match
-- Medium confidence (5-7): Most fields clear, category requires interpretation
-- Low confidence (3-4): Some fields unclear but reasonable assumptions possible
-- Never return confidence below 3 - always make best judgment
-- NO null or blank values - use best available data
+• High confidence (0.8+): All fields clear and obvious
+• Medium confidence (0.5-0.8): Most fields clear, some interpretation needed
+• Low confidence (0.3-0.5): Several fields unclear but reasonable assumptions possible
+• Always provide best estimates - no null values
 
-SMART DEFAULTS:
-- If no clear vendor: Use closest business identifier from OCR
-- If multiple amounts: Choose the largest/final total
-- If unclear category: Use most general applicable option
-- If no clear date: Use best available date information
-
-Analyze thoroughly and respond with only the JSON object.`;
+Return only the JSON object.`;
 
         return prompt;
     }
 
     /**
-     * Build confidence guidance section for LLM prompt
+     * Build confidence guidance section for chat history
      * @param {Object} ocrData - Enhanced OCR data with confidence guidance
-     * @returns {string} Confidence guidance section
+     * @returns {string} Confidence guidance section for chat message
      */
     function buildConfidenceGuidanceSection(ocrData) {
         if (!ocrData.confidenceGuidance) {
@@ -196,7 +199,7 @@ Analyze thoroughly and respond with only the JSON object.`;
 
         const { highConfidenceFields, lowConfidenceFields, fieldReliability } = ocrData.confidenceGuidance;
 
-        let guidance = 'DATA CONFIDENCE GUIDANCE:\n';
+        let guidance = '\n\nDATA CONFIDENCE GUIDANCE:\n';
 
         if (highConfidenceFields.length > 0) {
             guidance += `HIGH CONFIDENCE FIELDS (reliable): ${highConfidenceFields.join(', ')}\n`;
@@ -222,36 +225,7 @@ Analyze thoroughly and respond with only the JSON object.`;
         return guidance;
     }
 
-    /**
-     * Create documents from OCR data for RAG processing
-     * @param {Object} ocrData - OCR data
-     * @returns {Array} Array of document objects for LLM
-     */
-    function createDocumentsFromOCRData(ocrData) {
-        const documents = [];
 
-        try {
-            if (ocrData && typeof ocrData === 'object') {
-                // Create document from structured OCR data
-                documents.push(llm.createDocument({
-                    id: "ocr_data",
-                    data: JSON.stringify(ocrData, null, 2)
-                }));
-
-                // If there's raw text data, create a separate document
-                if (ocrData.rawText || ocrData.extractedText) {
-                    documents.push(llm.createDocument({
-                        id: "raw_text",
-                        data: ocrData.rawText || ocrData.extractedText
-                    }));
-                }
-            }
-        } catch (error) {
-            log.error('createDocumentsFromOCRData', `Error creating documents: ${error.message}`);
-        }
-
-        return documents;
-    }
 
     /**
      * Parse expense data from LLM response
@@ -304,7 +278,7 @@ Analyze thoroughly and respond with only the JSON object.`;
                 date: new Date().toISOString().split('T')[0],
                 categoryId: getDefaultCategoryId(expenseCategories),
                 description: 'Expense requiring manual review',
-                confidence: 0.1
+                confidence: 0.1 // Low confidence for fallback data
             };
         }
     }
@@ -417,7 +391,7 @@ Analyze thoroughly and respond with only the JSON object.`;
 
     /**
      * Validate and format confidence score
-     * @param {number|string} confidence - Raw confidence value
+     * @param {number|string} confidence - Raw confidence value (0.0-1.0 from LLM)
      * @returns {number} Formatted confidence between 0 and 1
      */
     function validateAndFormatConfidence(confidence) {
@@ -427,7 +401,7 @@ Analyze thoroughly and respond with only the JSON object.`;
             return 0.5; // Default medium confidence
         }
 
-        // Ensure between 0 and 1
+        // Ensure between 0 and 1 (LLM now correctly returns 0.0-1.0 range)
         return Math.max(0, Math.min(1, numConfidence));
     }
 
@@ -529,7 +503,7 @@ ${categoryList}
 Fix any obvious errors and return improved JSON with same structure.`;
 
             default:
-                return buildExpenseProcessingPrompt(data, categories);
+                return buildExpenseProcessingPrompt(categories);
         }
     }
 
@@ -559,6 +533,64 @@ Fix any obvious errors and return improved JSON with same structure.`;
     }
 
     /**
+     * Format text for NetSuite display by converting escape sequences to actual characters
+     * @param {string} text - Text with escape sequences
+     * @returns {string} Formatted text with actual line breaks and characters
+     */
+    function formatTextForNetSuiteDisplay(text) {
+        if (!text || typeof text !== 'string') {
+            return text;
+        }
+
+        return text
+            .replace(/\\n/g, '\n')        // Convert \n to actual line breaks
+            .replace(/\\t/g, '\t')        // Convert \t to actual tabs
+            .replace(/\\r/g, '\r')        // Convert \r to carriage returns
+            .replace(/\\"/g, '"')         // Convert \" to actual quotes
+            .replace(/\\'/g, "'")         // Convert \' to actual single quotes
+            .replace(/\\\\/g, '\\');      // Convert \\ to actual backslashes
+    }
+
+    /**
+     * Format entire object for NetSuite display, recursively converting text fields
+     * @param {Object} obj - Object to format
+     * @param {Array} textFields - Array of field names to format (optional)
+     * @returns {Object} Object with formatted text fields
+     */
+    function formatObjectForNetSuiteDisplay(obj, textFields = ['prompt', 'text', 'description', 'message']) {
+        if (!obj || typeof obj !== 'object') {
+            return obj;
+        }
+
+        const formatted = {};
+
+        for (let key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                const value = obj[key];
+
+                if (textFields.includes(key) && typeof value === 'string') {
+                    // Format text fields
+                    formatted[key] = formatTextForNetSuiteDisplay(value);
+                } else if (Array.isArray(value)) {
+                    // Recursively format arrays
+                    formatted[key] = value.map(item =>
+                        typeof item === 'object' ? formatObjectForNetSuiteDisplay(item, textFields) :
+                        typeof item === 'string' && textFields.includes('text') ? formatTextForNetSuiteDisplay(item) : item
+                    );
+                } else if (typeof value === 'object' && value !== null) {
+                    // Recursively format objects
+                    formatted[key] = formatObjectForNetSuiteDisplay(value, textFields);
+                } else {
+                    // Keep other values as-is
+                    formatted[key] = value;
+                }
+            }
+        }
+
+        return formatted;
+    }
+
+    /**
      * Simplified wrapper for backward compatibility
      * @param {Object} expenseData - Extracted expense data from OCR
      * @param {Array} expenseCategories - Optional expense categories (legacy parameter, will be fetched internally)
@@ -576,12 +608,13 @@ Fix any obvious errors and return improved JSON with same structure.`;
         processWithLLM: processWithLLM, // Backward compatibility alias
         parseExpenseDataFromLLMResponse: parseExpenseDataFromLLMResponse,
         buildExpenseProcessingPrompt: buildExpenseProcessingPrompt,
-        buildConfidenceGuidanceSection: buildConfidenceGuidanceSection,
         createSpecializedPrompt: createSpecializedPrompt,
         getLLMUsageStats: getLLMUsageStats,
         validateAndFormatVendor: validateAndFormatVendor,
         validateAndFormatAmount: validateAndFormatAmount,
         validateAndFormatDate: validateAndFormatDate,
-        validateAndFormatCategory: validateAndFormatCategory
+        validateAndFormatCategory: validateAndFormatCategory,
+        formatTextForNetSuiteDisplay: formatTextForNetSuiteDisplay,
+        formatObjectForNetSuiteDisplay: formatObjectForNetSuiteDisplay
     };
 });

@@ -32,7 +32,8 @@ function(runtime, log, url, query) {
             CONFIDENCE_SCORE: 'custrecord_ains_confidence_score',
             PROCESSED_DATE: 'custrecord_ains_processed_date',
             FILE_SIZE: 'custrecord_ains_file_size',
-            FILE_TYPE: 'custrecord_ains_file_type'
+            FILE_TYPE: 'custrecord_ains_file_type',
+            OCI_JSON_FILE: 'custrecord_ains_oci_json_file'
         },
 
         STATUS: {

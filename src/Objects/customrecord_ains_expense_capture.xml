@@ -278,7 +278,7 @@
       <sourcefrom></sourcefrom>
       <sourcelist></sourcelist>
       <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_technical]</subtab>
+      <subtab>[scriptid=customrecord_ains_expense_capture.tab_llm_response]</subtab>
     </customrecordcustomfield>
     <customrecordcustomfield scriptid="custrecord_ains_llm_request">
       <accesslevel>2</accesslevel>
@@ -318,7 +318,7 @@
       <sourcefrom></sourcefrom>
       <sourcelist></sourcelist>
       <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_technical]</subtab>
+      <subtab>[scriptid=customrecord_ains_expense_capture.tab_llm_request]</subtab>
     </customrecordcustomfield>
     <customrecordcustomfield scriptid="custrecord_ains_llm_raw_response">
       <accesslevel>2</accesslevel>
@@ -358,7 +358,7 @@
       <sourcefrom></sourcefrom>
       <sourcelist></sourcelist>
       <storevalue>T</storevalue>
-      <subtab>[scriptid=customrecord_ains_expense_capture.tab_technical]</subtab>
+      <subtab>[scriptid=customrecord_ains_expense_capture.tab_llm_response]</subtab>
     </customrecordcustomfield>
     <customrecordcustomfield scriptid="custrecord_ains_created_by">
       <accesslevel>2</accesslevel>
@@ -800,6 +800,46 @@
       <storevalue>T</storevalue>
       <subtab></subtab>
     </customrecordcustomfield>
+    <customrecordcustomfield scriptid="custrecord_ains_oci_json_file">
+      <accesslevel>2</accesslevel>
+      <allowquickadd>F</allowquickadd>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <defaultselection></defaultselection>
+      <defaultvalue></defaultvalue>
+      <description></description>
+      <displayheight></displayheight>
+      <displaytype>NORMAL</displaytype>
+      <displaywidth></displaywidth>
+      <dynamicdefault></dynamicdefault>
+      <enabletextenhance>F</enabletextenhance>
+      <encryptatrest>F</encryptatrest>
+      <fieldtype>DOCUMENT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help>Link to the OCI JSON output file from Document Understanding</help>
+      <isformula>F</isformula>
+      <ismandatory>F</ismandatory>
+      <isparent>F</isparent>
+      <label>OCI JSON File</label>
+      <linktext></linktext>
+      <maxlength></maxlength>
+      <maxvalue></maxvalue>
+      <minvalue></minvalue>
+      <onparentdelete></onparentdelete>
+      <parentsubtab></parentsubtab>
+      <rolerestrict>F</rolerestrict>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <selectrecordtype></selectrecordtype>
+      <showinlist>F</showinlist>
+      <sourcefilterby></sourcefilterby>
+      <sourcefrom></sourcefrom>
+      <sourcelist></sourcelist>
+      <storevalue>T</storevalue>
+      <subtab>[scriptid=customrecord_ains_expense_capture.tab_technical]</subtab>
+    </customrecordcustomfield>
   </customrecordcustomfields>
   <permissions>
     <permission>
@@ -822,6 +862,13 @@
       <tabparent></tabparent>
       <tabtitle>Integration</tabtitle>
     </subtab>
-
+    <subtab scriptid="tab_llm_request">
+      <tabparent></tabparent>
+      <tabtitle>LLM Request</tabtitle>
+    </subtab>
+    <subtab scriptid="tab_llm_response">
+      <tabparent></tabparent>
+      <tabtitle>LLM Response</tabtitle>
+    </subtab>
   </subtabs>
 </customrecordtype>

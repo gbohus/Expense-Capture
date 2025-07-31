@@ -195,7 +195,9 @@ function(file, search, record, runtime, query, documentUnderstanding, commonLib,
                 ociConfidence: ociConfidenceMetrics.overallOCIScore,
                 llmConfidence: llmResults.confidence,
                 compositeConfidence: compositeConfidence,
-                confidenceLevel: getConfidenceLevel(compositeConfidence)
+                confidenceLevel: getConfidenceLevel(compositeConfidence),
+                ociJsonFileId: ociFileId,
+                hasStructuredTabs: true
             });
 
             // Clean up the OCI file
@@ -382,6 +384,12 @@ function(file, search, record, runtime, query, documentUnderstanding, commonLib,
             expenseRecord.setValue({
                 fieldId: CONSTANTS.FIELDS.IMPORTED_TO_ER,
                 value: false
+            });
+
+            // Store link to the OCI JSON file
+            expenseRecord.setValue({
+                fieldId: CONSTANTS.FIELDS.OCI_JSON_FILE,
+                value: ociFileId
             });
 
             // Save the record
