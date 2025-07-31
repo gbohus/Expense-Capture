@@ -119,7 +119,7 @@ function(llm, log, search, commonLib) {
             `${cat.id}: ${cat.name}${cat.description ? ` (${cat.description})` : ''}`
         ).join('\n');
 
-        const prompt = `You are a NetSuite expense processing assistant with deep knowledge of business expense categorization. Analyze this receipt data intelligently.
+        const prompt = `You are a NetSuite expense processing expert with deep business expense categorization knowledge. Analyze this receipt data with intelligence and precision.
 
 EXTRACTED OCR DATA:
 ${JSON.stringify(ocrData, null, 2)}
@@ -129,30 +129,44 @@ ${buildConfidenceGuidanceSection(ocrData)}
 AVAILABLE EXPENSE CATEGORIES:
 ${categoryList}
 
-INTELLIGENT ANALYSIS TASK:
-Process this receipt using business expense expertise to make the smartest possible categorization and data extraction.
+INTELLIGENT EXTRACTION REQUIREMENTS:
 
-EXTRACTION REQUIREMENTS:
-1. **Vendor Analysis**: Extract the business/merchant name (not payment processor names like "SQ *" or "PYMT")
-2. **Amount Intelligence**: Find the final total amount including tax/tips, ignore subtotals or line items
-3. **Date Precision**: Extract transaction date (not processing/posting dates)
-4. **Smart Categorization**: Match to the most specific and appropriate expense category based on:
-   - Business type/industry of vendor
-   - Common expense patterns (meals, travel, office supplies, etc.)
-   - Specific category descriptions provided
-5. **Descriptive Summary**: Create a clear 3-6 word expense description
+1. **Vendor Analysis**: Extract the actual business/merchant name
+   - Ignore payment processors like "SQ *", "PYMT", "STRIPE", etc.
+   - Look for the actual business name on the receipt
+   - Use the most recognizable business identifier
+
+2. **Amount Intelligence**: Find the final total amount
+   - Include tax, tips, and service charges in the total
+   - Ignore subtotals, line items, or partial amounts
+   - Use the bottom-line total the customer actually paid
+
+3. **Date Precision**: Extract the transaction date
+   - Use the actual transaction/purchase date, not processing dates
+   - Format as YYYY-MM-DD
+   - If unclear, use the most likely transaction date from context
+
+4. **Smart Categorization**: Match to the most specific appropriate category
+   - Consider the vendor's business type and industry
+   - Match based on common expense patterns
+   - Use category descriptions to guide selection
+   - When uncertain, choose the most general applicable category
+
+5. **Descriptive Summary**: Create a clear, professional description (3-6 words)
 
 CATEGORY MATCHING INTELLIGENCE:
-- Restaurant/dining → Meals & Entertainment categories
-- Gas stations → Travel/Transportation
-- Hotels → Travel/Lodging
-- Office supply stores → Office Supplies
-- Airlines → Travel/Transportation
-- Uber/Lyft/taxi → Transportation/Local Travel
-- Software/subscriptions → Technology/Software
-- Phone bills → Communications/Phone
-- Internet → Communications/Internet
-- When uncertain, choose the most general applicable category
+• Restaurants/cafes/dining → Meals & Entertainment categories
+• Gas stations/fuel → Travel/Transportation
+• Hotels/lodging → Travel/Lodging
+• Office supply stores → Office Supplies
+• Airlines/flights → Travel/Transportation
+• Rideshare/taxi/Uber/Lyft → Transportation/Local Travel
+• Software/SaaS/subscriptions → Technology/Software
+• Telecommunications/phone → Communications/Phone
+• Internet services → Communications/Internet
+• Parking/tolls → Travel/Transportation
+• Medical/pharmacy → Healthcare/Medical
+• When uncertain between categories, choose the more specific one
 
 RESPONSE FORMAT:
 Return ONLY this exact JSON structure:
@@ -162,24 +176,25 @@ Return ONLY this exact JSON structure:
     "date": "string - transaction date in YYYY-MM-DD format",
     "categoryId": "string - exact category ID from list above",
     "description": "string - clear expense description (3-6 words)",
-    "confidence": number - confidence score 1-10 based on data clarity - 10 being the highest confidence",
+    "confidence": number - confidence score 0.0-1.0 based on data clarity,
     "reasoning": "string - brief explanation of category choice"
 }
 
+CONFIDENCE SCALE (0.0-1.0):
+• 0.8-1.0: High confidence - Clear vendor, amount, date, obvious category match
+• 0.6-0.7: Good confidence - Most fields clear, category requires some interpretation
+• 0.4-0.5: Medium confidence - Some fields unclear but reasonable assumptions possible
+• 0.3-0.3: Low confidence - Significant uncertainty but best judgment applied
+• Never below 0.3 - always provide your best analysis
+
 QUALITY STANDARDS:
-- High confidence (8+): Clear vendor, amount, date, obvious category match
-- Medium confidence (5-7): Most fields clear, category requires interpretation
-- Low confidence (3-4): Some fields unclear but reasonable assumptions possible
-- Never return confidence below 3 - always make best judgment
-- NO null or blank values - use best available data
+• NO null or blank values - use best available data or reasonable defaults
+• If no clear vendor: Use the closest business identifier from OCR
+• If multiple amounts: Choose the largest/final total that represents actual payment
+• If unclear category: Use the most general applicable option from available list
+• If no clear date: Use the best available date information from receipt
 
-SMART DEFAULTS:
-- If no clear vendor: Use closest business identifier from OCR
-- If multiple amounts: Choose the largest/final total
-- If unclear category: Use most general applicable option
-- If no clear date: Use best available date information
-
-Analyze thoroughly and respond with only the JSON object.`;
+Analyze the receipt data thoroughly and respond with only the JSON object.`;
 
         return prompt;
     }

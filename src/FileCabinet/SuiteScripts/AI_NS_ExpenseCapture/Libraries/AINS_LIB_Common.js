@@ -25,14 +25,16 @@ function(runtime, log, url, query) {
             IMPORTED_TO_ER: 'custrecord_ains_imported_to_er',
             EXPENSE_REPORT_ID: 'custrecord_ains_expense_report_id',
             ERROR_MESSAGE: 'custrecord_ains_error_message',
-            RAW_OCR_DATA: 'custrecord_ains_raw_ocr_data',
+            OCI_JSON_FILE: 'custrecord_ains_oci_json_file',
             LLM_RESPONSE: 'custrecord_ains_llm_response',
             LLM_REQUEST: 'custrecord_ains_llm_request',
             LLM_RAW_RESPONSE: 'custrecord_ains_llm_raw_response',
             CONFIDENCE_SCORE: 'custrecord_ains_confidence_score',
             PROCESSED_DATE: 'custrecord_ains_processed_date',
             FILE_SIZE: 'custrecord_ains_file_size',
-            FILE_TYPE: 'custrecord_ains_file_type'
+            FILE_TYPE: 'custrecord_ains_file_type',
+            RAW_OCI_BEFORE: 'custrecord_ains_raw_oci_before',
+            STRUCTURED_OCI_DATA: 'custrecord_ains_structured_oci_data'
         },
 
         STATUS: {

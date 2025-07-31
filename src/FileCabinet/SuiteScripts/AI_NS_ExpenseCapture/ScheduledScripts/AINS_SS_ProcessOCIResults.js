@@ -129,8 +129,11 @@ function(file, search, record, runtime, query, documentUnderstanding, commonLib,
                 extractedContext: context
             });
 
-            // Load the OCI results file
+                        // Load the OCI results file
             const fileObj = file.load({ id: ociFile.id });
+
+            // Get raw OCI data before parsing
+            const rawOciData = JSON.parse(fileObj.getContents());
 
             // Use parseAnalysisResult for structured data instead of raw JSON
             const structuredData = documentUnderstanding.parseAnalysisResult({ file: fileObj });
@@ -175,16 +178,24 @@ function(file, search, record, runtime, query, documentUnderstanding, commonLib,
                 usedStructuredData: true
             });
 
+            // Calculate composite confidence score before creating record
+            const compositeConfidence = calculateCompositeConfidence(
+                ociConfidenceMetrics.overallOCIScore,
+                llmResults.confidence
+            );
+
             // Create the final complete expense record
             const expenseRecordId = createCompleteExpenseRecord({
                 context: context,
                 ocrData: enhancedOcrData, // Use enhanced data
                 structuredData: structuredData, // Keep original structured data
+                rawOciData: rawOciData, // Raw OCI data before parsing
                 ociConfidenceMetrics: ociConfidenceMetrics, // Add OCI confidence
                 llmResults: llmResults,
                 rawLLMRequest: rawLLMRequest,
                 rawLLMResponse: rawLLMResponse,
-                ociFileId: ociFile.id
+                ociFileId: ociFile.id,
+                compositeConfidence: compositeConfidence // Pass the calculated confidence
             });
 
             commonLib.logOperation('ss_expense_record_created', {
@@ -204,30 +215,74 @@ function(file, search, record, runtime, query, documentUnderstanding, commonLib,
                 const archiveFolderId = getProcessedFolderId();
 
                 if (archiveFolderId) {
-                    const archivedFile = file.load({ id: ociFile.id });
-                    archivedFile.folder = archiveFolderId;
-                    archivedFile.name   = 'processed_' + archivedFile.name;
-                    archivedFile.save();
+                    try {
+                        const archivedFile = file.load({ id: ociFile.id });
+                        const originalName = archivedFile.name;
+                        archivedFile.folder = archiveFolderId;
+                        archivedFile.name = 'processed_' + originalName;
+                        archivedFile.save();
 
-                    commonLib.logOperation('ss_file_archived', {
-                        fileName: archivedFile.name,
-                        folderId: archiveFolderId
-                    });
+                        commonLib.logOperation('ss_file_archived', {
+                            originalName: originalName,
+                            newName: archivedFile.name,
+                            folderId: archiveFolderId
+                        });
+                    } catch (moveErr) {
+                        // If moving fails, try a different approach
+                        commonLib.logOperation('ss_file_move_failed_trying_copy', {
+                            fileName: ociFile.name,
+                            moveError: moveErr.message
+                        });
+
+                        // Try creating a copy in the archive folder and then delete original
+                        const originalFile = file.load({ id: ociFile.id });
+                        const archivedFile = file.create({
+                            name: 'processed_' + originalFile.name,
+                            fileType: originalFile.fileType,
+                            contents: originalFile.getContents(),
+                            folder: archiveFolderId
+                        });
+                        const newFileId = archivedFile.save();
+
+                        // Only delete original after successful copy
+                        file.delete({ id: ociFile.id });
+
+                        commonLib.logOperation('ss_file_copied_to_archive', {
+                            originalFileId: ociFile.id,
+                            newFileId: newFileId,
+                            fileName: archivedFile.name,
+                            folderId: archiveFolderId
+                        });
+                    }
                 } else {
-                    commonLib.logOperation('ss_processed_folder_not_found', {
-                        fileName: ociFile.name
-                    });
+                    // Folder couldn't be found or created - this is now a critical error
+                    commonLib.logOperation('ss_critical_archive_folder_unavailable', {
+                        fileName: ociFile.name,
+                        message: 'ArchivedOciJson folder not found and could not be created. File will be DELETED to prevent reprocessing.'
+                    }, 'error');
+
+                    // Still delete to prevent infinite reprocessing, but log as critical error
                     file.delete({ id: ociFile.id });
                 }
 
             } catch (archiveErr) {
-                // If archiving fails, log and fall back to deletion to avoid re-processing
+                // If archiving fails completely, log detailed error and fall back to deletion
                 commonLib.logOperation('ss_file_archive_error', {
                     fileName: ociFile.name,
-                    error: archiveErr.message
+                    error: archiveErr.message,
+                    stack: archiveErr.stack
                 }, 'error');
 
-                file.delete({ id: ociFile.id });
+                // Delete to prevent infinite reprocessing loops
+                try {
+                    file.delete({ id: ociFile.id });
+                } catch (deleteErr) {
+                    commonLib.logOperation('ss_file_delete_also_failed', {
+                        fileName: ociFile.name,
+                        archiveError: archiveErr.message,
+                        deleteError: deleteErr.message
+                    }, 'error');
+                }
             }
 
             commonLib.logOperation('ss_file_processed_successfully', {
@@ -277,7 +332,7 @@ function(file, search, record, runtime, query, documentUnderstanding, commonLib,
      */
     function createCompleteExpenseRecord(data) {
         try {
-            const { context, ocrData, structuredData, ociConfidenceMetrics, llmResults, rawLLMRequest, rawLLMResponse, ociFileId } = data;
+            const { context, ocrData, structuredData, rawOciData, ociConfidenceMetrics, llmResults, rawLLMRequest, rawLLMResponse, ociFileId, compositeConfidence } = data;
 
             const expenseRecord = record.create({
                 type: CONSTANTS.RECORD_TYPES.EXPENSE_CAPTURE
@@ -326,12 +381,7 @@ function(file, search, record, runtime, query, documentUnderstanding, commonLib,
                 value: llmResults.description || 'Receipt processed by AI'
             });
 
-            // Calculate composite confidence score for business users
-            const compositeConfidence = calculateCompositeConfidence(
-                ociConfidenceMetrics.overallOCIScore,
-                llmResults.confidence
-            );
-
+            // Use the passed composite confidence score
             expenseRecord.setValue({
                 fieldId: CONSTANTS.FIELDS.CONFIDENCE_SCORE,
                 value: compositeConfidence
@@ -348,20 +398,53 @@ function(file, search, record, runtime, query, documentUnderstanding, commonLib,
                 value: new Date()
             });
 
-            // Store technical data - enhanced structured data from parseAnalysisResult
+            // Set file metadata - get original file details
+            try {
+                const originalFile = file.load({ id: context.fileId });
+
+                // Set file size (convert bytes to KB)
+                const fileSizeKB = Math.ceil(originalFile.size / 1024);
+                expenseRecord.setValue({
+                    fieldId: CONSTANTS.FIELDS.FILE_SIZE,
+                    value: fileSizeKB
+                });
+
+                // Set file type from file extension
+                const fileName = originalFile.name || '';
+                const extension = fileName.split('.').pop()?.toLowerCase() || 'unknown';
+                expenseRecord.setValue({
+                    fieldId: CONSTANTS.FIELDS.FILE_TYPE,
+                    value: extension.toUpperCase()
+                });
+
+                commonLib.logOperation('ss_file_metadata_set', {
+                    fileName: fileName,
+                    fileSizeBytes: originalFile.size,
+                    fileSizeKB: fileSizeKB,
+                    fileType: extension.toUpperCase()
+                });
+
+            } catch (fileMetadataError) {
+                commonLib.logOperation('ss_file_metadata_error', {
+                    fileId: context.fileId,
+                    error: fileMetadataError.message
+                }, 'error');
+
+                // Set default values if file metadata retrieval fails
+                expenseRecord.setValue({
+                    fieldId: CONSTANTS.FIELDS.FILE_SIZE,
+                    value: 0
+                });
+                expenseRecord.setValue({
+                    fieldId: CONSTANTS.FIELDS.FILE_TYPE,
+                    value: 'UNKNOWN'
+                });
+            }
+
+            // Attach OCI JSON file by ID
             expenseRecord.setValue({
-                fieldId: CONSTANTS.FIELDS.RAW_OCR_DATA,
-                value: JSON.stringify({
-                    enhancedData: ocrData,
-                    confidenceBreakdown: {
-                        ociOverall: ociConfidenceMetrics.overallOCIScore,
-                        llmConfidence: llmResults.confidence,
-                        compositeScore: compositeConfidence,
-                        fieldConfidences: ociConfidenceMetrics.fieldConfidences,
-                        highConfidenceFields: ociConfidenceMetrics.highConfidenceFields,
-                        lowConfidenceFields: ociConfidenceMetrics.lowConfidenceFields
-                    }
-                })
+                fieldId: CONSTANTS.FIELDS.OCI_JSON_FILE,
+                value: ociFileId
             });
 
             expenseRecord.setValue({
@@ -379,6 +462,18 @@ function(file, search, record, runtime, query, documentUnderstanding, commonLib,
                 value: rawLLMResponse || ''
             });
 
+            // Store raw OCI data before parsing
+            expenseRecord.setValue({
+                fieldId: CONSTANTS.FIELDS.RAW_OCI_BEFORE,
+                value: JSON.stringify(rawOciData)
+            });
+
+            // Store structured OCI data after parsing
+            expenseRecord.setValue({
+                fieldId: CONSTANTS.FIELDS.STRUCTURED_OCI_DATA,
+                value: JSON.stringify(structuredData)
+            });
+
             expenseRecord.setValue({
                 fieldId: CONSTANTS.FIELDS.IMPORTED_TO_ER,
                 value: false
@@ -394,12 +489,12 @@ function(file, search, record, runtime, query, documentUnderstanding, commonLib,
     }
 
     /**
-     * Resolve the internal ID of the "Expense Capture - Processed" folder.
+     * Resolve the internal ID of the "ArchivedOciJson" folder.
      * 1. Try to locate the folder by exact name (case-sensitive match).
-     * 2. If not found, look for a script parameter (custscript_ains_processed_folder_id).
-     * 3. Finally, fall back to default internal ID 3876.
+     * 2. If not found, try to create the folder.
+     * 3. If creation fails, log detailed error for troubleshooting.
      *
-     * @returns {number} internalId of the processed folder
+     * @returns {number} internalId of the processed folder or null if not found/created
      */
     function getProcessedFolderId () {
         const PROCESSED_FOLDER_NAME = 'ArchivedOciJson';
@@ -408,130 +503,80 @@ function(file, search, record, runtime, query, documentUnderstanding, commonLib,
             const folderSearch = search.create({
                 type: 'folder',
                 filters: [['name', 'is', PROCESSED_FOLDER_NAME]],
-                columns: ['internalid']
+                columns: ['internalid', 'name']
             });
 
             const result = folderSearch.run().getRange({ start: 0, end: 1 });
             if (result && result.length) {
-                return parseInt(result[0].getValue({ name: 'internalid' }), 10);
+                const folderId = parseInt(result[0].getValue({ name: 'internalid' }), 10);
+                commonLib.logOperation('ss_processed_folder_found', {
+                    folderId: folderId,
+                    folderName: result[0].getValue({ name: 'name' })
+                });
+                return folderId;
             }
+
+            // Folder not found - try to create it
+            commonLib.logOperation('ss_processed_folder_not_found_attempting_create', {
+                folderName: PROCESSED_FOLDER_NAME
+            });
+
+            const newFolder = record.create({
+                type: record.Type.FOLDER
+            });
+            newFolder.setValue({
+                fieldId: 'name',
+                value: PROCESSED_FOLDER_NAME
+            });
+            newFolder.setValue({
+                fieldId: 'parent',
+                value: -15 // File Cabinet root
+            });
+
+            const newFolderId = newFolder.save();
+
+            commonLib.logOperation('ss_processed_folder_created', {
+                folderId: newFolderId,
+                folderName: PROCESSED_FOLDER_NAME
+            });
+
+            return newFolderId;
+
         } catch (lookupErr) {
-            // Fall through to next resolution steps but log for visibility
-            commonLib.logOperation('ss_processed_folder_lookup_error', {
-                message: lookupErr.message
+            // Log detailed error for troubleshooting
+            commonLib.logOperation('ss_processed_folder_error', {
+                folderName: PROCESSED_FOLDER_NAME,
+                error: lookupErr.message,
+                stack: lookupErr.stack
             }, 'error');
         }
-        return null; // Return null if folder not found by name
+        return null;
     }
 
-    /**
-     * Convert structured Document Understanding data to enhanced format for LLM
+            /**
+     * Pass structured OCR data directly to LLM with minimal processing
      * @param {Object} structuredData - Parsed Document Understanding data
-     * @returns {Object} Enhanced data optimized for LLM processing
+     * @returns {Object} Raw data with basic context for LLM
      */
     function convertStructuredDataForLLM(structuredData) {
         try {
-            const enhancedData = {
+            // Ultra-minimal approach: just add context and pass through
+            return {
                 documentType: 'receipt',
-                extractedFields: {},
-                extractedText: '',
-                tables: [],
-                confidenceGuidance: {
-                    highConfidenceFields: [],
-                    lowConfidenceFields: [],
-                    fieldReliability: {}
-                },
-                metadata: {
-                    confidence: 'high',
-                    structure: 'parsed',
-                    pages: structuredData.pages ? structuredData.pages.length : 0
-                }
+                ocrData: structuredData,
+                processingNote: 'Raw OCR data from NetSuite Document Understanding service'
             };
-
-            if (structuredData.pages && structuredData.pages.length > 0) {
-                const page = structuredData.pages[0]; // Process first page
-
-                                // Extract key-value fields that OCI identified
-                if (page.fields && page.fields.length > 0) {
-                    page.fields.forEach(field => {
-                        if (field.label && field.value) {
-                            const fieldName = field.label.name || 'unknown';
-                            const fieldValue = field.value.text || '';
-                            const confidence = field.value.confidence || 0;
-
-                            enhancedData.extractedFields[fieldName.toLowerCase()] = {
-                                value: fieldValue,
-                                confidence: confidence,
-                                type: field.type || 'text'
-                            };
-
-                            // Add confidence guidance for LLM
-                            enhancedData.confidenceGuidance.fieldReliability[fieldName.toLowerCase()] =
-                                confidence >= 0.8 ? 'high' :
-                                confidence >= 0.5 ? 'medium' : 'low';
-
-                            if (confidence >= 0.8) {
-                                enhancedData.confidenceGuidance.highConfidenceFields.push(fieldName);
-                            } else if (confidence < 0.5) {
-                                enhancedData.confidenceGuidance.lowConfidenceFields.push(fieldName);
-                            }
-                        }
-                    });
-                }
-
-                // Extract organized text from lines
-                if (page.lines && page.lines.length > 0) {
-                    enhancedData.extractedText = page.lines
-                        .map(line => line.text)
-                        .filter(text => text && text.trim().length > 0)
-                        .join('\n');
-                }
-
-                // Extract table data if present
-                if (page.tables && page.tables.length > 0) {
-                    page.tables.forEach(table => {
-                        const tableData = {
-                            confidence: table.confidence,
-                            rows: []
-                        };
-
-                        // Process header rows
-                        if (table.headerRows) {
-                            table.headerRows.forEach(row => {
-                                if (row.cells) {
-                                    tableData.rows.push(row.cells.map(cell => cell.text));
-                                }
-                            });
-                        }
-
-                        // Process body rows
-                        if (table.bodyRows) {
-                            table.bodyRows.forEach(row => {
-                                if (row.cells) {
-                                    tableData.rows.push(row.cells.map(cell => cell.text));
-                                }
-                            });
-                        }
-
-                        enhancedData.tables.push(tableData);
-                    });
-                }
-            }
-
-            return enhancedData;
 
         } catch (error) {
             commonLib.logOperation('convert_structured_data_error', {
                 error: error.message
             }, 'error');
 
-            // Return fallback structure
+            // Return minimal fallback
             return {
                 documentType: 'receipt',
-                extractedFields: {},
-                extractedText: 'Error processing structured data',
-                tables: [],
-                metadata: { confidence: 'low', structure: 'fallback' }
+                ocrData: { pages: [], mimeType: 'unknown' },
+                processingNote: 'Error loading OCR data'
             };
         }
     }
