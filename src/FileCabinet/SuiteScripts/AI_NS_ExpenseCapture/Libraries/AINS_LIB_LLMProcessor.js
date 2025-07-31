@@ -124,6 +124,8 @@ function(llm, log, search, commonLib) {
 EXTRACTED OCR DATA:
 ${JSON.stringify(ocrData, null, 2)}
 
+${buildConfidenceGuidanceSection(ocrData)}
+
 AVAILABLE EXPENSE CATEGORIES:
 ${categoryList}
 
@@ -180,6 +182,44 @@ SMART DEFAULTS:
 Analyze thoroughly and respond with only the JSON object.`;
 
         return prompt;
+    }
+
+    /**
+     * Build confidence guidance section for LLM prompt
+     * @param {Object} ocrData - Enhanced OCR data with confidence guidance
+     * @returns {string} Confidence guidance section
+     */
+    function buildConfidenceGuidanceSection(ocrData) {
+        if (!ocrData.confidenceGuidance) {
+            return '';
+        }
+
+        const { highConfidenceFields, lowConfidenceFields, fieldReliability } = ocrData.confidenceGuidance;
+
+        let guidance = 'DATA CONFIDENCE GUIDANCE:\n';
+
+        if (highConfidenceFields.length > 0) {
+            guidance += `HIGH CONFIDENCE FIELDS (reliable): ${highConfidenceFields.join(', ')}\n`;
+        }
+
+        if (lowConfidenceFields.length > 0) {
+            guidance += `LOW CONFIDENCE FIELDS (verify carefully): ${lowConfidenceFields.join(', ')}\n`;
+        }
+
+        // Add field-specific reliability notes
+        if (Object.keys(fieldReliability).length > 0) {
+            guidance += 'FIELD RELIABILITY:\n';
+            Object.entries(fieldReliability).forEach(([field, reliability]) => {
+                guidance += `- ${field}: ${reliability} confidence\n`;
+            });
+        }
+
+        guidance += '\nPROCESSING INSTRUCTIONS:\n';
+        guidance += '- Prioritize high confidence fields when they conflict with low confidence fields\n';
+        guidance += '- Use fallback text analysis for missing or low confidence structured fields\n';
+        guidance += '- Adjust your overall confidence score based on data reliability\n';
+
+        return guidance;
     }
 
     /**
@@ -536,6 +576,7 @@ Fix any obvious errors and return improved JSON with same structure.`;
         processWithLLM: processWithLLM, // Backward compatibility alias
         parseExpenseDataFromLLMResponse: parseExpenseDataFromLLMResponse,
         buildExpenseProcessingPrompt: buildExpenseProcessingPrompt,
+        buildConfidenceGuidanceSection: buildConfidenceGuidanceSection,
         createSpecializedPrompt: createSpecializedPrompt,
         getLLMUsageStats: getLLMUsageStats,
         validateAndFormatVendor: validateAndFormatVendor,

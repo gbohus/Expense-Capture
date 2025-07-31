@@ -89,14 +89,23 @@ function(file, record, runtime, search, task, commonLib, llmProcessor) {
             docTask.inputFile = fileObj;
             docTask.outputFilePath = outputFilePath;
 
-            // Submit the task
+            // Create scheduled script to auto-process results when OCI completes
+            const scheduledScript = task.create(task.TaskType.SCHEDULED_SCRIPT);
+            scheduledScript.scriptId = 'customscript_ains_ss_processociresults';
+
+            // Chain the scheduled script to run after Document Understanding completes
+            docTask.addInboundDependency(scheduledScript);
+
+            // Submit the Document Understanding task (will auto-trigger scheduled script when done)
             const taskId = docTask.submit();
 
-            commonLib.logOperation('mr_map_task_submitted', {
+            commonLib.logOperation('mr_map_task_with_autodependency_submitted', {
                 fileId: fileId,
                 trackingId: trackingId,
                 taskId: taskId,
-                outputFilePath: outputFilePath
+                outputFilePath: outputFilePath,
+                scheduledScriptId: 'customscript_ains_ss_processociresults',
+                autoTriggerEnabled: true
             });
 
             // Pass data to reduce stage

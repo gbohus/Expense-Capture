@@ -5,9 +5,9 @@
  * @description Scheduled script to process completed OCI files and create final expense records
  */
 
-define(['N/file', 'N/search', 'N/record', 'N/runtime', 'N/query',
+define(['N/file', 'N/search', 'N/record', 'N/runtime', 'N/query', 'N/documentUnderstanding',
         '../Libraries/AINS_LIB_Common', '../Libraries/AINS_LIB_LLMProcessor'],
-function(file, search, record, runtime, query, commonLib, llmProcessor) {
+function(file, search, record, runtime, query, documentUnderstanding, commonLib, llmProcessor) {
 
     const CONSTANTS = commonLib.CONSTANTS;
 
@@ -129,18 +129,30 @@ function(file, search, record, runtime, query, commonLib, llmProcessor) {
                 extractedContext: context
             });
 
-            // Load the OCI results
+            // Load the OCI results file
             const fileObj = file.load({ id: ociFile.id });
-            const ocrData = JSON.parse(fileObj.getContents());
 
-            commonLib.logOperation('ss_ocr_data_loaded', {
+            // Use parseAnalysisResult for structured data instead of raw JSON
+            const structuredData = documentUnderstanding.parseAnalysisResult({ file: fileObj });
+
+            commonLib.logOperation('ss_structured_data_parsed', {
                 fileName: ociFile.name,
-                hasOcrData: !!ocrData,
-                ocrDataKeys: ocrData ? Object.keys(ocrData) : []
+                hasPages: !!(structuredData.pages && structuredData.pages.length > 0),
+                pageCount: structuredData.pages ? structuredData.pages.length : 0,
+                hasFields: !!(structuredData.pages?.[0]?.fields?.length),
+                fieldCount: structuredData.pages?.[0]?.fields?.length || 0,
+                hasTables: !!(structuredData.pages?.[0]?.tables?.length),
+                tableCount: structuredData.pages?.[0]?.tables?.length || 0
             });
 
-            // Process with LLM
-            const llmResponse = llmProcessor.processExpenseDataWithLLM(ocrData, {
+            // Convert structured data to enhanced format for LLM
+            const enhancedOcrData = convertStructuredDataForLLM(structuredData);
+
+            // Calculate overall OCI confidence for reporting
+            const ociConfidenceMetrics = calculateOCIConfidenceMetrics(structuredData);
+
+            // Process with LLM using enhanced structured data
+            const llmResponse = llmProcessor.processExpenseDataWithLLM(enhancedOcrData, {
                 model: 'command-r',
                 confidenceThreshold: 0.7
             });
@@ -156,13 +168,19 @@ function(file, search, record, runtime, query, commonLib, llmProcessor) {
                 fileName: ociFile.name,
                 vendor: llmResults.vendor,
                 amount: llmResults.amount,
-                confidence: llmResults.confidence
+                llmConfidence: llmResults.confidence,
+                ociConfidence: ociConfidenceMetrics.overallOCIScore,
+                highConfidenceOCIFields: ociConfidenceMetrics.highConfidenceFields,
+                lowConfidenceOCIFields: ociConfidenceMetrics.lowConfidenceFields,
+                usedStructuredData: true
             });
 
             // Create the final complete expense record
             const expenseRecordId = createCompleteExpenseRecord({
                 context: context,
-                ocrData: ocrData,
+                ocrData: enhancedOcrData, // Use enhanced data
+                structuredData: structuredData, // Keep original structured data
+                ociConfidenceMetrics: ociConfidenceMetrics, // Add OCI confidence
                 llmResults: llmResults,
                 rawLLMRequest: rawLLMRequest,
                 rawLLMResponse: rawLLMResponse,
@@ -173,7 +191,11 @@ function(file, search, record, runtime, query, commonLib, llmProcessor) {
                 fileName: ociFile.name,
                 expenseRecordId: expenseRecordId,
                 vendor: llmResults.vendor,
-                amount: llmResults.amount
+                amount: llmResults.amount,
+                ociConfidence: ociConfidenceMetrics.overallOCIScore,
+                llmConfidence: llmResults.confidence,
+                compositeConfidence: compositeConfidence,
+                confidenceLevel: getConfidenceLevel(compositeConfidence)
             });
 
             // Clean up the OCI file
@@ -255,7 +277,7 @@ function(file, search, record, runtime, query, commonLib, llmProcessor) {
      */
     function createCompleteExpenseRecord(data) {
         try {
-            const { context, ocrData, llmResults, rawLLMRequest, rawLLMResponse, ociFileId } = data;
+            const { context, ocrData, structuredData, ociConfidenceMetrics, llmResults, rawLLMRequest, rawLLMResponse, ociFileId } = data;
 
             const expenseRecord = record.create({
                 type: CONSTANTS.RECORD_TYPES.EXPENSE_CAPTURE
@@ -304,9 +326,15 @@ function(file, search, record, runtime, query, commonLib, llmProcessor) {
                 value: llmResults.description || 'Receipt processed by AI'
             });
 
+            // Calculate composite confidence score for business users
+            const compositeConfidence = calculateCompositeConfidence(
+                ociConfidenceMetrics.overallOCIScore,
+                llmResults.confidence
+            );
+
             expenseRecord.setValue({
                 fieldId: CONSTANTS.FIELDS.CONFIDENCE_SCORE,
-                value: llmResults.confidence || 0
+                value: compositeConfidence
             });
 
             // Set status as complete (no intermediate states)
@@ -320,10 +348,20 @@ function(file, search, record, runtime, query, commonLib, llmProcessor) {
                 value: new Date()
             });
 
-            // Store technical data
+            // Store technical data - enhanced structured data from parseAnalysisResult
             expenseRecord.setValue({
                 fieldId: CONSTANTS.FIELDS.RAW_OCR_DATA,
-                value: JSON.stringify(ocrData)
+                value: JSON.stringify({
+                    enhancedData: ocrData,
+                    confidenceBreakdown: {
+                        ociOverall: ociConfidenceMetrics.overallOCIScore,
+                        llmConfidence: llmResults.confidence,
+                        compositeScore: compositeConfidence,
+                        fieldConfidences: ociConfidenceMetrics.fieldConfidences,
+                        highConfidenceFields: ociConfidenceMetrics.highConfidenceFields,
+                        lowConfidenceFields: ociConfidenceMetrics.lowConfidenceFields
+                    }
+                })
             });
 
             expenseRecord.setValue({
@@ -384,6 +422,232 @@ function(file, search, record, runtime, query, commonLib, llmProcessor) {
             }, 'error');
         }
         return null; // Return null if folder not found by name
+    }
+
+    /**
+     * Convert structured Document Understanding data to enhanced format for LLM
+     * @param {Object} structuredData - Parsed Document Understanding data
+     * @returns {Object} Enhanced data optimized for LLM processing
+     */
+    function convertStructuredDataForLLM(structuredData) {
+        try {
+            const enhancedData = {
+                documentType: 'receipt',
+                extractedFields: {},
+                extractedText: '',
+                tables: [],
+                confidenceGuidance: {
+                    highConfidenceFields: [],
+                    lowConfidenceFields: [],
+                    fieldReliability: {}
+                },
+                metadata: {
+                    confidence: 'high',
+                    structure: 'parsed',
+                    pages: structuredData.pages ? structuredData.pages.length : 0
+                }
+            };
+
+            if (structuredData.pages && structuredData.pages.length > 0) {
+                const page = structuredData.pages[0]; // Process first page
+
+                                // Extract key-value fields that OCI identified
+                if (page.fields && page.fields.length > 0) {
+                    page.fields.forEach(field => {
+                        if (field.label && field.value) {
+                            const fieldName = field.label.name || 'unknown';
+                            const fieldValue = field.value.text || '';
+                            const confidence = field.value.confidence || 0;
+
+                            enhancedData.extractedFields[fieldName.toLowerCase()] = {
+                                value: fieldValue,
+                                confidence: confidence,
+                                type: field.type || 'text'
+                            };
+
+                            // Add confidence guidance for LLM
+                            enhancedData.confidenceGuidance.fieldReliability[fieldName.toLowerCase()] =
+                                confidence >= 0.8 ? 'high' :
+                                confidence >= 0.5 ? 'medium' : 'low';
+
+                            if (confidence >= 0.8) {
+                                enhancedData.confidenceGuidance.highConfidenceFields.push(fieldName);
+                            } else if (confidence < 0.5) {
+                                enhancedData.confidenceGuidance.lowConfidenceFields.push(fieldName);
+                            }
+                        }
+                    });
+                }
+
+                // Extract organized text from lines
+                if (page.lines && page.lines.length > 0) {
+                    enhancedData.extractedText = page.lines
+                        .map(line => line.text)
+                        .filter(text => text && text.trim().length > 0)
+                        .join('\n');
+                }
+
+                // Extract table data if present
+                if (page.tables && page.tables.length > 0) {
+                    page.tables.forEach(table => {
+                        const tableData = {
+                            confidence: table.confidence,
+                            rows: []
+                        };
+
+                        // Process header rows
+                        if (table.headerRows) {
+                            table.headerRows.forEach(row => {
+                                if (row.cells) {
+                                    tableData.rows.push(row.cells.map(cell => cell.text));
+                                }
+                            });
+                        }
+
+                        // Process body rows
+                        if (table.bodyRows) {
+                            table.bodyRows.forEach(row => {
+                                if (row.cells) {
+                                    tableData.rows.push(row.cells.map(cell => cell.text));
+                                }
+                            });
+                        }
+
+                        enhancedData.tables.push(tableData);
+                    });
+                }
+            }
+
+            return enhancedData;
+
+        } catch (error) {
+            commonLib.logOperation('convert_structured_data_error', {
+                error: error.message
+            }, 'error');
+
+            // Return fallback structure
+            return {
+                documentType: 'receipt',
+                extractedFields: {},
+                extractedText: 'Error processing structured data',
+                tables: [],
+                metadata: { confidence: 'low', structure: 'fallback' }
+            };
+        }
+    }
+
+    /**
+     * Calculate OCI confidence metrics for reporting and decision making
+     * @param {Object} structuredData - Parsed Document Understanding data
+     * @returns {Object} Confidence metrics
+     */
+    function calculateOCIConfidenceMetrics(structuredData) {
+        try {
+            const metrics = {
+                fieldConfidences: {},
+                averageFieldConfidence: 0,
+                highConfidenceFields: [],
+                lowConfidenceFields: [],
+                overallOCIScore: 0
+            };
+
+            if (structuredData.pages && structuredData.pages.length > 0) {
+                const page = structuredData.pages[0];
+
+                if (page.fields && page.fields.length > 0) {
+                    let totalConfidence = 0;
+                    let fieldCount = 0;
+
+                    page.fields.forEach(field => {
+                        if (field.label && field.value) {
+                            const fieldName = field.label.name || 'unknown';
+                            const confidence = field.value.confidence || 0;
+
+                            metrics.fieldConfidences[fieldName.toLowerCase()] = confidence;
+                            totalConfidence += confidence;
+                            fieldCount++;
+
+                            if (confidence >= 0.8) {
+                                metrics.highConfidenceFields.push(fieldName);
+                            } else if (confidence < 0.5) {
+                                metrics.lowConfidenceFields.push(fieldName);
+                            }
+                        }
+                    });
+
+                    metrics.averageFieldConfidence = fieldCount > 0 ? totalConfidence / fieldCount : 0;
+                    metrics.overallOCIScore = metrics.averageFieldConfidence;
+                }
+            }
+
+            return metrics;
+
+        } catch (error) {
+            commonLib.logOperation('calculate_oci_confidence_error', {
+                error: error.message
+            }, 'error');
+
+            return {
+                fieldConfidences: {},
+                averageFieldConfidence: 0,
+                highConfidenceFields: [],
+                lowConfidenceFields: [],
+                overallOCIScore: 0
+            };
+        }
+    }
+
+    /**
+     * Calculate composite confidence score combining OCI and LLM confidence
+     * @param {number} ociConfidence - OCI overall confidence (0-1)
+     * @param {number} llmConfidence - LLM confidence (0-1)
+     * @returns {number} Composite confidence score (0-1)
+     */
+    function calculateCompositeConfidence(ociConfidence, llmConfidence) {
+        try {
+            // Ensure valid inputs
+            const oci = Math.max(0, Math.min(1, ociConfidence || 0));
+            const llm = Math.max(0, Math.min(1, llmConfidence || 0));
+
+            // If either is very low, overall confidence should be low
+            if (oci < 0.3 || llm < 0.3) {
+                return Math.min(oci, llm); // Return the lower of the two
+            }
+
+            // Weighted combination:
+            // - OCI confidence weighted 60% (data extraction quality is fundamental)
+            // - LLM confidence weighted 40% (interpretation quality)
+            const weightedScore = (oci * 0.6) + (llm * 0.4);
+
+            // Apply a penalty if either component is not high confidence
+            // This ensures both components need to be good for high overall score
+            const harmonic_mean = 2 * (oci * llm) / (oci + llm);
+            const final_score = (weightedScore + harmonic_mean) / 2;
+
+            return Math.round(final_score * 100) / 100; // Round to 2 decimal places
+
+        } catch (error) {
+            commonLib.logOperation('calculate_composite_confidence_error', {
+                ociConfidence: ociConfidence,
+                llmConfidence: llmConfidence,
+                error: error.message
+            }, 'error');
+
+            // Return conservative confidence on error
+            return 0.3;
+        }
+    }
+
+    /**
+     * Convert numeric confidence to human-readable level
+     * @param {number} confidence - Composite confidence score (0-1)
+     * @returns {string} Confidence level description
+     */
+    function getConfidenceLevel(confidence) {
+        if (confidence >= 0.8) return 'High';
+        if (confidence >= 0.6) return 'Medium';
+        if (confidence >= 0.4) return 'Low';
+        return 'Very Low';
     }
 
     return {
