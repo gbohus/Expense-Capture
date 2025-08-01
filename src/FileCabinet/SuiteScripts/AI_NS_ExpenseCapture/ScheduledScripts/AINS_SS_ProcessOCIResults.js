@@ -5,11 +5,43 @@
  * @description Scheduled script to process completed OCI files and create final expense records
  */
 
-define(['N/file', 'N/search', 'N/record', 'N/runtime', 'N/query', 'N/documentUnderstanding',
+define(['N/file', 'N/search', 'N/record', 'N/runtime', 'N/query', 'N/documentUnderstanding', 'N/format', 'N/config',
         '../Libraries/AINS_LIB_Common', '../Libraries/AINS_LIB_LLMProcessor'],
-function(file, search, record, runtime, query, documentUnderstanding, commonLib, llmProcessor) {
+function(file, search, record, runtime, query, documentUnderstanding, format, config, commonLib, llmProcessor) {
 
     const CONSTANTS = commonLib.CONSTANTS;
+
+    /**
+     * Create a Date object that respects NetSuite company timezone preferences
+     * @param {string} dateString - Date string in YYYY-MM-DD format
+     * @returns {Date} Date object in company timezone
+     */
+    function createCompanyTimezoneDate(dateString) {
+        try {
+            // First create the date using NetSuite's format module with company timezone
+            // This ensures we respect the company's configured timezone preference
+            const formattedDate = format.parse({
+                value: dateString,
+                type: format.Type.DATE
+            });
+
+            return formattedDate;
+
+        } catch (error) {
+            commonLib.logOperation('ss_timezone_date_creation_error', {
+                dateString: dateString,
+                error: error.message
+            }, 'error');
+
+            // Fallback to manual parsing if format module fails
+            const dateParts = dateString.split('-');
+            return new Date(
+                parseInt(dateParts[0]), // year
+                parseInt(dateParts[1]) - 1, // month (0-based)
+                parseInt(dateParts[2]) // day
+            );
+        }
+    }
 
     /**
      * Scheduled script execution function
@@ -362,10 +394,14 @@ function(file, search, record, runtime, query, documentUnderstanding, commonLib,
                 value: llmResults.amount || 0
             });
 
-            if (llmResults.date) {
+                        if (llmResults.date) {
+                // Use NetSuite company timezone preferences for date creation
+                // This ensures dates are stored in the correct timezone based on company configuration
+                const companyDate = createCompanyTimezoneDate(llmResults.date);
+
                 expenseRecord.setValue({
                     fieldId: CONSTANTS.FIELDS.EXPENSE_DATE,
-                    value: new Date(llmResults.date)
+                    value: companyDate
                 });
             }
 
@@ -597,32 +633,84 @@ function(file, search, record, runtime, query, documentUnderstanding, commonLib,
             };
 
             if (structuredData.pages && structuredData.pages.length > 0) {
-                const page = structuredData.pages[0];
+                let totalConfidence = 0;
+                let elementCount = 0;
 
-                if (page.fields && page.fields.length > 0) {
-                    let totalConfidence = 0;
-                    let fieldCount = 0;
+                structuredData.pages.forEach(page => {
+                    // Process words confidence
+                    if (page.words && page.words.length > 0) {
+                        page.words.forEach(word => {
+                            if (word.confidence !== undefined) {
+                                totalConfidence += word.confidence;
+                                elementCount++;
 
-                    page.fields.forEach(field => {
-                        if (field.label && field.value) {
-                            const fieldName = field.label.name || 'unknown';
-                            const confidence = field.value.confidence || 0;
-
-                            metrics.fieldConfidences[fieldName.toLowerCase()] = confidence;
-                            totalConfidence += confidence;
-                            fieldCount++;
-
-                            if (confidence >= 0.8) {
-                                metrics.highConfidenceFields.push(fieldName);
-                            } else if (confidence < 0.5) {
-                                metrics.lowConfidenceFields.push(fieldName);
+                                if (word.confidence >= 0.8) {
+                                    metrics.highConfidenceFields.push(`word: ${word.text}`);
+                                } else if (word.confidence < 0.5) {
+                                    metrics.lowConfidenceFields.push(`word: ${word.text}`);
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
 
-                    metrics.averageFieldConfidence = fieldCount > 0 ? totalConfidence / fieldCount : 0;
-                    metrics.overallOCIScore = metrics.averageFieldConfidence;
-                }
+                    // Process lines confidence
+                    if (page.lines && page.lines.length > 0) {
+                        page.lines.forEach(line => {
+                            if (line.confidence !== undefined) {
+                                totalConfidence += line.confidence;
+                                elementCount++;
+                            }
+                        });
+                    }
+
+                    // Process tables confidence
+                    if (page.tables && page.tables.length > 0) {
+                        page.tables.forEach(table => {
+                            if (table.confidence !== undefined) {
+                                totalConfidence += table.confidence;
+                                elementCount++;
+
+                                if (table.confidence >= 0.8) {
+                                    metrics.highConfidenceFields.push(`table: ${table.confidence.toFixed(2)}`);
+                                } else if (table.confidence < 0.5) {
+                                    metrics.lowConfidenceFields.push(`table: ${table.confidence.toFixed(2)}`);
+                                }
+                            }
+                        });
+                    }
+
+                    // Process fields if they exist (for backward compatibility)
+                    if (page.fields && page.fields.length > 0) {
+                        page.fields.forEach(field => {
+                            if (field.label && field.value) {
+                                const fieldName = field.label.name || 'unknown';
+                                const confidence = field.value.confidence || 0;
+
+                                metrics.fieldConfidences[fieldName.toLowerCase()] = confidence;
+                                totalConfidence += confidence;
+                                elementCount++;
+
+                                if (confidence >= 0.8) {
+                                    metrics.highConfidenceFields.push(fieldName);
+                                } else if (confidence < 0.5) {
+                                    metrics.lowConfidenceFields.push(fieldName);
+                                }
+                            }
+                        });
+                    }
+                });
+
+                metrics.averageFieldConfidence = elementCount > 0 ? totalConfidence / elementCount : 0;
+                metrics.overallOCIScore = metrics.averageFieldConfidence;
+
+                // Log the calculated metrics for debugging
+                commonLib.logOperation('oci_confidence_calculated', {
+                    totalElements: elementCount,
+                    averageConfidence: metrics.averageFieldConfidence,
+                    overallScore: metrics.overallOCIScore,
+                    highConfidenceCount: metrics.highConfidenceFields.length,
+                    lowConfidenceCount: metrics.lowConfidenceFields.length
+                });
             }
 
             return metrics;

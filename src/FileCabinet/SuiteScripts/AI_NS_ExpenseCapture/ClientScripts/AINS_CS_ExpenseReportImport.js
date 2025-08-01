@@ -4,14 +4,43 @@
  * @NModuleScope SameAccount
  * @description AI NS|CS|Expense Report Import - Simple expense import functionality
  */
-define(['N/currentRecord', 'N/https', 'N/url', 'N/file', '../Libraries/AINS_LIB_Common'],
-    function(currentRecord, https, url, file, commonLib) {
+define(['N/currentRecord', 'N/https', 'N/url', 'N/file', 'N/format', '../Libraries/AINS_LIB_Common'],
+    function(currentRecord, https, url, file, format, commonLib) {
 
     function pageInit(context) {
         // Only add button in create/edit mode
         if (context.mode === 'create' || context.mode === 'edit') {
             loadStyles();
             setTimeout(addImportButton, 500); // Small delay to ensure DOM is ready
+        }
+    }
+
+    /**
+     * Create a Date object that respects NetSuite timezone preferences
+     * @param {string} dateString - Date string in YYYY-MM-DD format
+     * @returns {Date} Date object in proper timezone
+     */
+    function createTimezoneAwareDate(dateString) {
+        try {
+            // Use NetSuite's format module to parse dates properly
+            // This respects user/company timezone preferences
+            const formattedDate = format.parse({
+                value: dateString,
+                type: format.Type.DATE
+            });
+
+            return formattedDate;
+
+        } catch (error) {
+            console.error('Date parsing error:', error.message, 'for date:', dateString);
+
+            // Fallback to manual parsing if format module fails
+            const dateParts = dateString.split('-');
+            return new Date(
+                parseInt(dateParts[0]), // year
+                parseInt(dateParts[1]) - 1, // month (0-based)
+                parseInt(dateParts[2]) // day
+            );
         }
     }
 
@@ -203,11 +232,15 @@ define(['N/currentRecord', 'N/https', 'N/url', 'N/file', '../Libraries/AINS_LIB_
             expenses.forEach(expense => {
                 rec.selectNewLine({ sublistId: 'expense' });
 
-                if (expense.date) {
+                                if (expense.date) {
+                    // Use NetSuite timezone-aware date creation
+                    // This respects user/company timezone preferences
+                    const timezoneAwareDate = createTimezoneAwareDate(expense.date);
+
                     rec.setCurrentSublistValue({
                         sublistId: 'expense',
                         fieldId: 'expensedate',
-                        value: new Date(expense.date)
+                        value: timezoneAwareDate
                     });
                 }
 

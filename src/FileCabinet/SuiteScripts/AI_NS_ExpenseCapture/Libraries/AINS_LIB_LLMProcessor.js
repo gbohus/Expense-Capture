@@ -13,10 +13,9 @@ function(llm, log, search, commonLib) {
      * Process OCR data using NetSuite LLM to format expense information
      * @param {Object} ocrData - Raw OCR data from OCI Document Understanding
      * @param {Object} options - Processing options
-     * @param {string} [options.model] - LLM model to use (defaults to Command R)
      * @param {Array} [options.expenseCategories] - Available expense categories
-     * @param {number} [options.confidenceThreshold] - Minimum confidence threshold
      * @returns {Object} Structured expense data formatted by LLM
+     * @note Model is configured via script parameter LLM_MODEL (e.g., 'COHERE_COMMAND_R')
      */
     function processExpenseDataWithLLM(ocrData, options = {}) {
         const trackingId = commonLib.generateTrackingId();
@@ -31,15 +30,23 @@ function(llm, log, search, commonLib) {
             // Get expense categories if not provided
             const expenseCategories = options.expenseCategories || commonLib.getExpenseCategories();
 
-            // Build prompt with OCR data and categories
-            const prompt = buildExpenseProcessingPrompt(ocrData, expenseCategories);
+            // Build chat-based prompt with OCR data and categories
+            const promptData = buildExpenseProcessingPrompt(ocrData, expenseCategories);
+
+                                    // Get model from script parameter (try both Map/Reduce and Scheduled Script parameter names)
+            let modelFromParam = commonLib.getScriptParameter(CONSTANTS.SCRIPT_PARAMS.LLM_MODEL, null);
+            if (!modelFromParam) {
+                modelFromParam = commonLib.getScriptParameter(CONSTANTS.SCRIPT_PARAMS.SS_LLM_MODEL, null);
+            }
 
             // Configure LLM parameters
             const llmOptions = {
-                prompt: prompt,
-                modelFamily: getLLMModelFamily(options.model),
+                // Use concatenated prompt for NetSuite LLM compatibility
+                // (NetSuite may not support chat history format yet)
+                prompt: promptData.concatenatedPrompt,
+                modelFamily: getLLMModelFamily(modelFromParam),
                 modelParameters: {
-                    maxTokens: 500,
+                    maxTokens: 1000, // Increased for thinking block + JSON response
                     temperature: 0.1,
                     topK: 3,
                     topP: 0.7,
@@ -47,6 +54,12 @@ function(llm, log, search, commonLib) {
                     presencePenalty: 0
                 }
             };
+
+            // TODO: When NetSuite supports chat history format, uncomment below:
+            // if (llm.supportsChatHistory) {
+            //     llmOptions.messages = promptData.chatHistory;
+            //     delete llmOptions.prompt;
+            // }
 
             // Add documents if available for RAG
             const documents = createDocumentsFromOCRData(ocrData);
@@ -66,12 +79,7 @@ function(llm, log, search, commonLib) {
             // Debug logging for parsed data
             log.debug('processExpenseDataWithLLM', `Parsed LLM data: ${JSON.stringify(parsedData)}`);
 
-            // Apply confidence threshold
-            const confidenceThreshold = options.confidenceThreshold ||
-                commonLib.getScriptParameter(CONSTANTS.SCRIPT_PARAMS.CONFIDENCE_THRESHOLD,
-                    CONSTANTS.DEFAULT_VALUES.CONFIDENCE_THRESHOLD);
-
-            const finalData = applyConfidenceThreshold(parsedData, confidenceThreshold);
+            const finalData = parsedData;
 
             commonLib.logOperation('processExpenseDataWithLLM_success', {
                 trackingId: trackingId,
@@ -88,7 +96,8 @@ function(llm, log, search, commonLib) {
                 trackingId: trackingId,
                 expenseData: finalData,
                 rawLLMResponse: response.text,
-                rawLLMRequest: prompt,
+                rawLLMRequest: promptData.concatenatedPrompt,
+                chatHistory: promptData.chatHistory, // For future chat-based API support
                 model: response.model,
                 citations: response.citations || []
             };
@@ -109,94 +118,116 @@ function(llm, log, search, commonLib) {
     }
 
     /**
-     * Build comprehensive prompt for expense processing
+     * Build comprehensive prompt for expense processing using chat-based format
      * @param {Object} ocrData - OCR extracted data
      * @param {Array} expenseCategories - Available expense categories
-     * @returns {string} Formatted prompt for LLM
+     * @returns {Object} Chat history array with system and user messages
      */
     function buildExpenseProcessingPrompt(ocrData, expenseCategories) {
         const categoryList = expenseCategories.map(cat =>
             `${cat.id}: ${cat.name}${cat.description ? ` (${cat.description})` : ''}`
         ).join('\n');
 
-        const prompt = `You are a NetSuite expense processing expert with deep business expense categorization knowledge. Analyze this receipt data with intelligence and precision.
+        // System message - establishes role and rules
+        const systemMessageContent = `### ROLE & GOAL
+You are an automated expense processing system for NetSuite, designed to act as an expert financial controller. Your primary goal is to analyze raw OCR data from receipts and extract structured, audit-ready expense data with extreme precision and business acumen.
 
-EXTRACTED OCR DATA:
-${JSON.stringify(ocrData, null, 2)}
+### CORE INSTRUCTIONS
+1.  **Analyze the User's Input**: The user will provide raw OCR data and a list of valid expense categories.
+2.  **Think Step-by-Step**: Before generating the final JSON, you MUST first perform a step-by-step analysis within a <thinking> block. This is your internal scratchpad and is a mandatory first step.
+    -   **Vendor Identification**: Scrutinize the OCR data to find the true merchant name. State which text you are selecting and why you are ignoring payment processors (e.g., "SQ *", "Stripe").
+    -   **Amount Extraction**: Identify all monetary values. Select the final, all-inclusive total (including tax and tip). State which value you've chosen and why.
+    -   **Date Determination**: Find all dates. Select the most plausible transaction date and format it as YYYY-MM-DD.
+    -   **Categorization Logic**: Based on the vendor and line-item details, determine the most fitting category from the provided list. Justify your choice.
+    -   **Confidence Assessment**: Based on the clarity of the data, determine a confidence score using the scale below and briefly justify it.
+3.  **Generate Final JSON**: After your analysis in the <thinking> block, construct the final JSON object. This object must be the *only* thing you output after the <thinking> block.
 
-${buildConfidenceGuidanceSection(ocrData)}
+### EXTRACTION & BUSINESS RULES
 
-AVAILABLE EXPENSE CATEGORIES:
-${categoryList}
+**Vendor Analysis:**
+-   **PRIORITIZE**: The most prominent, recognizable business name.
+-   **IGNORE**: Payment gateways ("SQ *", "PYMT", "Stripe"), POS system names ("Toast", "Square"), and generic terminal IDs.
+-   **FALLBACK**: If no clear name exists, use the most descriptive text available from the top of the receipt.
 
-INTELLIGENT EXTRACTION REQUIREMENTS:
+**Amount Intelligence:**
+-   **TARGET**: The "Grand Total", "Total", "Amount Paid", or the largest, final figure.
+-   **INCLUDE**: All taxes, tips, and service charges.
+-   **DISREGARD**: Currency symbols (£, $, €) or commas in the number. Parse only the numeric value.
 
-1. **Vendor Analysis**: Extract the actual business/merchant name
-   - Ignore payment processors like "SQ *", "PYMT", "STRIPE", etc.
-   - Look for the actual business name on the receipt
-   - Use the most recognizable business identifier
+**Date Precision:**
+-   **TARGET**: The primary transaction or purchase date.
+-   **FORMAT**: Strictly YYYY-MM-DD.
 
-2. **Amount Intelligence**: Find the final total amount
-   - Include tax, tips, and service charges in the total
-   - Ignore subtotals, line items, or partial amounts
-   - Use the bottom-line total the customer actually paid
+**Smart Categorization:**
+-   **PRIMARY CUE**: The vendor's industry (e.g., "Home Depot" -> "Building Supplies").
+-   **SECONDARY CUE**: Analyze line-item descriptions for keywords. A receipt from "Shell" listing "SNACKS" and "DRINK" should be categorized as "Meals", not "Fuel".
+-   **HIERARCHY**: Always prefer the most specific category available. If unsure between two, choose the more general parent category if available.
 
-3. **Date Precision**: Extract the transaction date
-   - Use the actual transaction/purchase date, not processing dates
-   - Format as YYYY-MM-DD
-   - If unclear, use the most likely transaction date from context
+**Description Generation:**
+-   Create a concise, professional summary (3-6 words).
+-   Format: "[Vendor Name] [Primary Item/Purpose]" (e.g., "Starbucks Coffee Meeting", "Uber ride to airport").
 
-4. **Smart Categorization**: Match to the most specific appropriate category
-   - Consider the vendor's business type and industry
-   - Match based on common expense patterns
-   - Use category descriptions to guide selection
-   - When uncertain, choose the most general applicable category
+### OUTPUT REQUIREMENTS
 
-5. **Descriptive Summary**: Create a clear, professional description (3-6 words)
+**1. Thinking Scratchpad (MANDATORY):**
+First, output your internal monologue inside a <thinking> block.
+<thinking>
+[Your step-by-step analysis and reasoning goes here.]
+</thinking>
 
-CATEGORY MATCHING INTELLIGENCE:
-• Restaurants/cafes/dining → Meals & Entertainment categories
-• Gas stations/fuel → Travel/Transportation
-• Hotels/lodging → Travel/Lodging
-• Office supply stores → Office Supplies
-• Airlines/flights → Travel/Transportation
-• Rideshare/taxi/Uber/Lyft → Transportation/Local Travel
-• Software/SaaS/subscriptions → Technology/Software
-• Telecommunications/phone → Communications/Phone
-• Internet services → Communications/Internet
-• Parking/tolls → Travel/Transportation
-• Medical/pharmacy → Healthcare/Medical
-• When uncertain between categories, choose the more specific one
+**2. Final JSON Object (STRICTLY a single JSON object):**
+After the thinking block, you MUST return ONLY the JSON object below. Do not add any other text or explanations. Ensure all fields are populated. Do not use null or empty strings.
 
-RESPONSE FORMAT:
-Return ONLY this exact JSON structure:
 {
-    "vendor": "string - clean business name (no payment processors)",
-    "amount": number - final total as decimal number,
-    "date": "string - transaction date in YYYY-MM-DD format",
-    "categoryId": "string - exact category ID from list above",
-    "description": "string - clear expense description (3-6 words)",
-    "confidence": number - confidence score 0.0-1.0 based on data clarity,
-    "reasoning": "string - brief explanation of category choice"
+    "vendor": "string",
+    "amount": number,
+    "date": "string (YYYY-MM-DD)",
+    "categoryId": "string (Exact ID from list)",
+    "description": "string (3-6 words)",
+    "confidence": number (0.0-1.0),
+    "reasoning": "string (Client-facing summary of your choices)"
 }
 
-CONFIDENCE SCALE (0.0-1.0):
-• 0.8-1.0: High confidence - Clear vendor, amount, date, obvious category match
-• 0.6-0.7: Good confidence - Most fields clear, category requires some interpretation
-• 0.4-0.5: Medium confidence - Some fields unclear but reasonable assumptions possible
-• 0.3-0.3: Low confidence - Significant uncertainty but best judgment applied
-• Never below 0.3 - always provide your best analysis
+**CONFIDENCE SCALE (0.0 - 1.0):**
+-   **0.9 - 1.0 (High):** All data is perfectly clear and unambiguous.
+-   **0.7 - 0.8 (Good):** Most data is clear, but one field required minor interpretation.
+-   **0.5 - 0.6 (Medium):** Significant ambiguity in one or more fields, but a logical choice was made.
+-   **0.3 - 0.4 (Low):** Key data is unclear or inferred from poor quality OCR. A best-effort guess was made.`;
 
-QUALITY STANDARDS:
-• NO null or blank values - use best available data or reasonable defaults
-• If no clear vendor: Use the closest business identifier from OCR
-• If multiple amounts: Choose the largest/final total that represents actual payment
-• If unclear category: Use the most general applicable option from available list
-• If no clear date: Use the best available date information from receipt
+        // User message - contains the specific data to analyze
+        const confidenceGuidance = buildConfidenceGuidanceSection(ocrData);
+        const userMessageContent = `### DATA FOR ANALYSIS
 
-Analyze the receipt data thoroughly and respond with only the JSON object.`;
+**1. EXTRACTED OCR DATA:**
+\`\`\`json
+${JSON.stringify(ocrData, null, 2)}
+\`\`\`
 
-        return prompt;
+${confidenceGuidance ? `**2. DATA CONFIDENCE GUIDANCE:**
+${confidenceGuidance}
+
+` : ''}**${confidenceGuidance ? '3' : '2'}. AVAILABLE EXPENSE CATEGORIES:**
+\`\`\`
+${categoryList}
+\`\`\`
+
+Begin your analysis. First, provide your reasoning inside the <thinking> block, then provide the final JSON object.`;
+
+        // Return chat history format for better LLM performance
+        return {
+            chatHistory: [
+                {
+                    role: "system",
+                    content: systemMessageContent
+                },
+                {
+                    role: "user",
+                    content: userMessageContent
+                }
+            ],
+            // Also return concatenated version for compatibility with single-prompt APIs
+            concatenatedPrompt: `${systemMessageContent}\n\n### USER REQUEST:\n${userMessageContent}`
+        };
     }
 
     /**
@@ -269,6 +300,56 @@ Analyze the receipt data thoroughly and respond with only the JSON object.`;
     }
 
     /**
+     * Extract JSON from LLM response that includes thinking blocks
+     * @param {string} responseText - Raw LLM response
+     * @returns {string} Extracted JSON string
+     */
+    function extractJSONFromThinkingResponse(responseText) {
+        try {
+            // Check if response contains thinking blocks
+            if (responseText.includes('<thinking>') && responseText.includes('</thinking>')) {
+                // Extract everything after the closing thinking tag
+                const thinkingEndIndex = responseText.lastIndexOf('</thinking>');
+                if (thinkingEndIndex !== -1) {
+                    let jsonPart = responseText.substring(thinkingEndIndex + '</thinking>'.length).trim();
+
+                    // If the JSON is wrapped in code blocks, extract it
+                    const jsonBlockMatch = jsonPart.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+                    if (jsonBlockMatch) {
+                        return jsonBlockMatch[1].trim();
+                    }
+
+                    // Look for the first JSON object in the text
+                    const jsonMatch = jsonPart.match(/(\{[\s\S]*?\})/);
+                    if (jsonMatch) {
+                        return jsonMatch[1].trim();
+                    }
+
+                    return jsonPart;
+                }
+            }
+
+            // If no thinking blocks, try to extract JSON directly
+            const jsonBlockMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+            if (jsonBlockMatch) {
+                return jsonBlockMatch[1].trim();
+            }
+
+            // Look for the first JSON object in the text
+            const jsonMatch = responseText.match(/(\{[\s\S]*?\})/);
+            if (jsonMatch) {
+                return jsonMatch[1].trim();
+            }
+
+            return responseText;
+
+        } catch (error) {
+            log.debug('extractJSONFromThinkingResponse', `Error extracting JSON: ${error.message}`);
+            return responseText; // Fallback to original text
+        }
+    }
+
+    /**
      * Parse expense data from LLM response
      * @param {string} responseText - LLM response text
      * @param {Array} expenseCategories - Available expense categories for validation
@@ -278,6 +359,9 @@ Analyze the receipt data thoroughly and respond with only the JSON object.`;
         try {
             // Clean response text (remove any markdown formatting)
             let cleanResponse = responseText.trim();
+
+            // Extract JSON from thinking block format
+            cleanResponse = extractJSONFromThinkingResponse(cleanResponse);
 
             // Remove code block markers if present
             cleanResponse = cleanResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '');
@@ -446,25 +530,7 @@ Analyze the receipt data thoroughly and respond with only the JSON object.`;
         return Math.max(0, Math.min(1, numConfidence));
     }
 
-    /**
-     * Apply confidence threshold to expense data
-     * @param {Object} expenseData - Processed expense data
-     * @param {number} threshold - Confidence threshold
-     * @returns {Object} Expense data with confidence applied
-     */
-    function applyConfidenceThreshold(expenseData, threshold) {
-        const result = { ...expenseData };
 
-        // If overall confidence is below threshold, flag for manual review
-        if (result.confidence < threshold) {
-            result.requiresReview = true;
-            result.reviewReason = `Confidence (${result.confidence.toFixed(2)}) below threshold (${threshold})`;
-        } else {
-            result.requiresReview = false;
-        }
-
-        return result;
-    }
 
     /**
      * Get default category ID from available categories
@@ -493,22 +559,53 @@ Analyze the receipt data thoroughly and respond with only the JSON object.`;
     }
 
     /**
-     * Get LLM model family from string
-     * @param {string} model - Model name
+     * Get LLM model family from enum string name
+     * @param {string} modelEnumName - Model enum name (e.g., 'COHERE_COMMAND_R')
      * @returns {string} LLM model family constant
+     * @throws {Error} If model enum name is not supported
      */
-    function getLLMModelFamily(model) {
-        const modelName = (model || 'command-r').toLowerCase();
+    function getLLMModelFamily(modelEnumName) {
+        if (!modelEnumName) {
+            throw new Error('Model enum name is required. Please set the LLM_MODEL script parameter.');
+        }
 
-        switch (modelName) {
-            case 'command-r':
-            case 'cohere-command-r':
+        const enumName = modelEnumName.toUpperCase();
+
+        switch (enumName) {
+            case 'COHERE_COMMAND_R':
                 return llm.ModelFamily.COHERE_COMMAND_R;
-            case 'llama':
-            case 'meta-llama':
-                return llm.ModelFamily.META_LLAMA_3_1_70B_INSTRUCT;
+            case 'COHERE_COMMAND_R_PLUS':
+                return llm.ModelFamily.COHERE_COMMAND_R_PLUS;
+            case 'COHERE_COMMAND_A':
+                return llm.ModelFamily.COHERE_COMMAND_A;
+            case 'META_LLAMA':
+                return llm.ModelFamily.META_LLAMA;
+            case 'META_LLAMA_VISION':
+                return llm.ModelFamily.META_LLAMA_VISION;
+            case 'COHERE_EMBED_ENGLISH':
+                return llm.ModelFamily.COHERE_EMBED_ENGLISH;
+            case 'COHERE_EMBED_MULTILINGUAL':
+                return llm.ModelFamily.COHERE_EMBED_MULTILINGUAL;
+            case 'COHERE_EMBED_ENGLISH_LIGHT':
+                return llm.ModelFamily.COHERE_EMBED_ENGLISH_LIGHT;
+            case 'COHERE_EMBED_MULTILINGUAL_LIGHT':
+                return llm.ModelFamily.COHERE_EMBED_MULTILINGUAL_LIGHT;
+            case 'OPENAI_GPT':
+                return llm.ModelFamily.OPENAI_GPT;
+            case 'OPENAI_GPT_MINI':
+                return llm.ModelFamily.OPENAI_GPT_MINI;
+            case 'OPENAI_GPT_NANO':
+                return llm.ModelFamily.OPENAI_GPT_NANO;
+            case 'OPENAI_O1':
+                return llm.ModelFamily.OPENAI_O1;
+            case 'OPENAI_O3_MINI':
+                return llm.ModelFamily.OPENAI_O3_MINI;
+            case 'OPENAI_GPT_OMNI':
+                return llm.ModelFamily.OPENAI_GPT_OMNI;
+            case 'OPENAI_GPT_OMNI_MINI':
+                return llm.ModelFamily.OPENAI_GPT_OMNI_MINI;
             default:
-                return llm.ModelFamily.COHERE_COMMAND_R; // Default to Command R
+                throw new Error(`Unsupported model: ${modelEnumName}. Please check the script parameter help for valid model values.`);
         }
     }
 
@@ -517,35 +614,53 @@ Analyze the receipt data thoroughly and respond with only the JSON object.`;
      * @param {string} scenario - Processing scenario (standard, review, category_only)
      * @param {Object} data - Data for the scenario
      * @param {Array} categories - Available categories
-     * @returns {string} Specialized prompt
+     * @returns {Object} Specialized prompt with chat history and concatenated formats
      */
     function createSpecializedPrompt(scenario, data, categories) {
         const categoryList = categories.map(cat => `${cat.id}: ${cat.name}`).join('\n');
 
+        let systemMessage, userMessage;
+
         switch (scenario) {
             case 'category_only':
-                return `Analyze this expense data and assign the most appropriate category:
-
-DATA: ${JSON.stringify(data, null, 2)}
+                systemMessage = `You are a business expense categorization expert. Your task is to analyze expense data and assign the most appropriate category ID from the provided list. You must return ONLY the category ID - no other text, explanations, or formatting.`;
+                userMessage = `DATA: ${JSON.stringify(data, null, 2)}
 
 CATEGORIES:
 ${categoryList}
 
 Return only the category ID (just the ID, no other text).`;
+                break;
 
             case 'review':
-                return `Review and improve this expense data:
-
-CURRENT DATA: ${JSON.stringify(data, null, 2)}
+                systemMessage = `You are an expense data quality reviewer. Your task is to review and improve expense data by fixing obvious errors while maintaining the same JSON structure. Focus on correcting vendor names, amounts, dates, and category assignments.`;
+                userMessage = `CURRENT DATA: ${JSON.stringify(data, null, 2)}
 
 CATEGORIES:
 ${categoryList}
 
 Fix any obvious errors and return improved JSON with same structure.`;
+                break;
 
             default:
                 return buildExpenseProcessingPrompt(data, categories);
         }
+
+        const chatHistory = [
+            {
+                role: "system",
+                content: systemMessage
+            },
+            {
+                role: "user",
+                content: userMessage
+            }
+        ];
+
+        return {
+            chatHistory: chatHistory,
+            concatenatedPrompt: `${systemMessage}\n\n### USER REQUEST:\n${userMessage}`
+        };
     }
 
     /**
@@ -590,6 +705,7 @@ Fix any obvious errors and return improved JSON with same structure.`;
         processExpenseDataWithLLM: processExpenseDataWithLLM,
         processWithLLM: processWithLLM, // Backward compatibility alias
         parseExpenseDataFromLLMResponse: parseExpenseDataFromLLMResponse,
+        extractJSONFromThinkingResponse: extractJSONFromThinkingResponse,
         buildExpenseProcessingPrompt: buildExpenseProcessingPrompt,
         buildConfidenceGuidanceSection: buildConfidenceGuidanceSection,
         createSpecializedPrompt: createSpecializedPrompt,

@@ -1122,7 +1122,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
 
             <div class="upload-page-container">
                 <div class="page-header">
-                    <h1>🤖 Expense Capture</h1>
+                    <h1>Expense Capture</h1>
                 </div>
 
                 <div class="process-flow-container">
@@ -1168,7 +1168,7 @@ function(ui, file, record, runtime, url, redirect, encode, task, search, config,
             <div id="upload_modal" class="my-app-modal-backdrop" style="display: none;">
                 <div class="my-app-modal-dialog" style="width: 90%; max-width: 800px; height: 80%; max-height: 600px;">
                     <div class="my-app-modal-header">
-                        <span>📸 Upload Receipt</span>
+                        <span>Upload Receipt</span>
                         <button onclick="closeUploadModal()" class="close-button">×</button>
                     </div>
                     <iframe id="modal_iframe" src="${regularUploadUrl}" style="width: 100%; height: calc(100% - 60px); border: none; background: white;"></iframe>

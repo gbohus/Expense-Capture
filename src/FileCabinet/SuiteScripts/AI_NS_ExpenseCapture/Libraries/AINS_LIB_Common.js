@@ -64,14 +64,12 @@ function(runtime, log, url, query) {
             MAX_FILE_SIZE: 'custscript_ains_max_file_size',
             RESULTS_FOLDER_ID: 'custscript_ains_results_folder',
             LLM_MODEL: 'custscript_ains_llm_model',
-            CONFIDENCE_THRESHOLD: 'custscript_ains_confidence_threshold',
+            SS_LLM_MODEL: 'custscript_ains_ss_llm_model',
             AUTO_ASSIGN_CATEGORIES: 'custscript_ains_auto_assign'
         },
 
         DEFAULT_VALUES: {
             MAX_FILE_SIZE_MB: 10,
-            LLM_MODEL: 'command-r',
-            CONFIDENCE_THRESHOLD: 0.8,
             AUTO_ASSIGN_CATEGORIES: true
         },
 

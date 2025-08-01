@@ -20,37 +20,10 @@
       <displaywidth></displaywidth>
       <dynamicdefault></dynamicdefault>
       <fieldtype>TEXT</fieldtype>
-      <help>Select the LLM model to use for expense data processing.</help>
+      <help>Valid model values: COHERE_COMMAND_R, COHERE_COMMAND_R_PLUS, COHERE_COMMAND_A, META_LLAMA, META_LLAMA_VISION, COHERE_EMBED_ENGLISH, COHERE_EMBED_MULTILINGUAL, COHERE_EMBED_ENGLISH_LIGHT, COHERE_EMBED_MULTILINGUAL_LIGHT, OPENAI_GPT, OPENAI_GPT_MINI, OPENAI_GPT_NANO, OPENAI_O1, OPENAI_O3_MINI, OPENAI_GPT_OMNI, OPENAI_GPT_OMNI_MINI</help>
       <isformula>F</isformula>
       <ismandatory>T</ismandatory>
       <label>LLM Model</label>
-      <linktext></linktext>
-      <maxlength></maxlength>
-      <maxvalue></maxvalue>
-      <minvalue></minvalue>
-      <onparentdelete></onparentdelete>
-      <searchlevel>2</searchlevel>
-      <selectrecordtype></selectrecordtype>
-      <setting></setting>
-      <storevalue>T</storevalue>
-    </scriptcustomfield>
-    <scriptcustomfield scriptid="custscript_ains_confidence_threshold">
-      <accesslevel>2</accesslevel>
-      <applyformatting>T</applyformatting>
-      <checkspelling>F</checkspelling>
-      <defaultchecked>F</defaultchecked>
-      <defaultselection></defaultselection>
-      <defaultvalue>0.8</defaultvalue>
-      <description>Minimum confidence score for auto-assignment (0.0 - 1.0)</description>
-      <displayheight></displayheight>
-      <displaytype>NORMAL</displaytype>
-      <displaywidth></displaywidth>
-      <dynamicdefault></dynamicdefault>
-      <fieldtype>FLOAT</fieldtype>
-      <help>Set the confidence threshold for AI processing.</help>
-      <isformula>F</isformula>
-      <ismandatory>T</ismandatory>
-      <label>Confidence Threshold</label>
       <linktext></linktext>
       <maxlength></maxlength>
       <maxvalue></maxvalue>
@@ -208,8 +181,7 @@
       <status>NOTSCHEDULED</status>
       <title>AI NS Process Receipts</title>
       <yieldaftermins>60</yieldaftermins>
-      <custscript_ains_llm_model>command-r</custscript_ains_llm_model>
-      <custscript_ains_confidence_threshold>0.8</custscript_ains_confidence_threshold>
+      <custscript_ains_llm_model>COHERE_COMMAND_R</custscript_ains_llm_model>
       <custscript_ains_auto_assign>T</custscript_ains_auto_assign>
       <recurrence>
         <single>

@@ -6,12 +6,38 @@
   <notifyemails></notifyemails>
   <notifyowner>T</notifyowner>
   <scriptfile>[/SuiteScripts/AI_NS_ExpenseCapture/ScheduledScripts/AINS_SS_ProcessOCIResults.js]</scriptfile>
+  <scriptcustomfields>
+    <scriptcustomfield scriptid="custscript_ains_ss_llm_model">
+      <accesslevel>2</accesslevel>
+      <applyformatting>F</applyformatting>
+      <checkspelling>F</checkspelling>
+      <defaultchecked>F</defaultchecked>
+      <description>NetSuite LLM model for processing</description>
+      <displaytype>NORMAL</displaytype>
+      <dynamicdefault></dynamicdefault>
+      <fieldtype>TEXT</fieldtype>
+      <globalsearch>F</globalsearch>
+      <help>Valid model values: COHERE_COMMAND_R, COHERE_COMMAND_R_PLUS, COHERE_COMMAND_A, META_LLAMA, META_LLAMA_VISION, COHERE_EMBED_ENGLISH, COHERE_EMBED_MULTILINGUAL, COHERE_EMBED_ENGLISH_LIGHT, COHERE_EMBED_MULTILINGUAL_LIGHT, OPENAI_GPT, OPENAI_GPT_MINI, OPENAI_GPT_NANO, OPENAI_O1, OPENAI_O3_MINI, OPENAI_GPT_OMNI, OPENAI_GPT_OMNI_MINI</help>
+      <isformula>F</isformula>
+      <ismandatory>T</ismandatory>
+      <label>LLM Model</label>
+      <linktext></linktext>
+      <maxlength>50</maxlength>
+      <onparentdelete></onparentdelete>
+      <searchcomparefield></searchcomparefield>
+      <searchdefault></searchdefault>
+      <searchlevel>2</searchlevel>
+      <setting></setting>
+      <storevalue>T</storevalue>
+    </scriptcustomfield>
+  </scriptcustomfields>
   <scriptdeployments>
     <scriptdeployment scriptid="customdeploy_ains_ss_processociresults">
       <isdeployed>T</isdeployed>
       <loglevel>DEBUG</loglevel>
       <status>NOTSCHEDULED</status>
       <title>AI NS OCI Results Processor</title>
+      <custscript_ains_ss_llm_model>COHERE_COMMAND_R</custscript_ains_ss_llm_model>
       <recurrence>
         <single>
           <repeat></repeat>
